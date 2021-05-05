@@ -1,0 +1,10 @@
+name: yapc
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.6
+  - notebook
+  - cython
+  - numpy
+  - scikit-learn
+  - future

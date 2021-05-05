@@ -1,0 +1,21 @@
+YAPC
+====
+
+Python version of the NASA Goddard Space Flight Center *"Yep Another Photon Classifier"* (YAPC)
+Program for ATL03 Global Geolocated Photon Data from the NASA ICESat-2 mission
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Getting Started
+
+    getting_started/Install.rst
+    getting_started/Contributing.rst
+    getting_started/Resources.rst
+    getting_started/Citations.rst
+
+.. toctree::
+    :maxdepth: 1
+    :hidden:
+    :caption: User Guide
+
+    user_guide/classify_photons.rst

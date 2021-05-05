@@ -1,0 +1,48 @@
+====
+YAPC
+====
+
+|Language|
+|License|
+
+.. |Language| image:: https://img.shields.io/badge/python-v3.7-green.svg
+   :target: https://www.python.org  /
+
+.. |License| image:: https://img.shields.io/github/license/tsutterley/yapc
+   :target: https://github.com/tsutterley/yapc/blob/main/LICENSE
+
+Python version of the NASA Goddard Space Flight Center YAPC (*"Yep Another Photon Classifier"*) Program
+
+- https://icesat-2.gsfc.nasa.gov
+- https://icesat-2-scf.gsfc.nasa.gov
+- https://nsidc.org/data/icesat-2/
+
+Dependencies
+############
+
+ - `numpy: Scientific Computing Tools For Python <https://numpy.org>`_
+ - `cython: C-extensions for Python <http://cython.org/>`_
+ - `scikit-learn: Machine Learning in Python <https://scikit-learn.org/stable/index.html>`_
+ - `future: Compatibility layer between Python 2 and Python 3 <http://python-future.org/>`_
+
+Download
+########
+
+| The program homepage is:
+| https://github.com/tsutterley/yapc
+| A zip archive of the latest version is available directly at:
+| https://github.com/tsutterley/yapc/archive/main.zip
+
+Disclaimer
+##########
+
+This project contains work and contributions from the `scientific community <./CONTRIBUTORS.rst>`_.
+This program is not sponsored or maintained by the Universities Space Research Association (USRA) or NASA.
+It is provided here for your convenience but *with no guarantees whatsoever*.
+
+License
+#######
+
+The content of this project is licensed under the
+`Creative Commons Attribution 4.0 Attribution license <https://creativecommons.org/licenses/by/4.0/>`_
+and the source code is licensed under the `MIT license <LICENSE>`_.
