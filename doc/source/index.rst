@@ -1,7 +1,7 @@
 YAPC
 ====
 
-Python version of the NASA Goddard Space Flight Center *"Yep Another Photon Classifier"* (YAPC)
+Python version of the NASA Goddard Space Flight Center *"Yet Another Photon Classifier"* (YAPC)
 Program for ATL03 Global Geolocated Photon Data from the NASA ICESat-2 mission
 
 .. toctree::

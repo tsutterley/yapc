@@ -9,7 +9,7 @@ log = logging.getLogger()
 
 # package description and keywords
 description = ('Python version of the NASA GSFC YAPC '
-    '("Yep Another Photon Classifier") Program')
+    '("Yet Another Photon Classifier") Program')
 keywords = 'ICESat-2 laser altimetry, ATLAS, photon classification, kNN filtering'
 # get long_description from README.rst
 with open("README.rst", "r") as fh:

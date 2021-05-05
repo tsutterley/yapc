@@ -4,6 +4,7 @@ YAPC
 
 |Language|
 |License|
+|Documentation Status|
 
 .. |Language| image:: https://img.shields.io/badge/python-v3.7-green.svg
    :target: https://www.python.org  /
@@ -11,7 +12,10 @@ YAPC
 .. |License| image:: https://img.shields.io/github/license/tsutterley/yapc
    :target: https://github.com/tsutterley/yapc/blob/main/LICENSE
 
-Python version of the NASA Goddard Space Flight Center YAPC (*"Yep Another Photon Classifier"*) Program
+.. |Documentation Status| image:: https://readthedocs.org/projects/yapc/badge/?version=latest
+   :target: https://yapc.readthedocs.io/en/latest/?badge=latest
+
+Python version of the NASA Goddard Space Flight Center YAPC (*"Yet Another Photon Classifier"*) Program
 
 - https://icesat-2.gsfc.nasa.gov
 - https://icesat-2-scf.gsfc.nasa.gov

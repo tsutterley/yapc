@@ -9,7 +9,7 @@ Calling Sequence
 
 .. code-block:: python
 
-    import yapc.classify_photons
+    from yapc.classify_photons import classify_photons
 
     # geolocated photon data for beam gtx
     val = IS2_atl03_mds[gtx]
@@ -61,7 +61,7 @@ Calling Sequence
         # indices for the major frame within the buffered window
         i2, = np.nonzero(photon_mframes[i1] == unique_major_frames[iteration])
         # calculate photon event weights
-        pe_weights[i1[i2]] = yapc.classify_photons(x_atc[i1], h_ph[i1],
+        pe_weights[i1[i2]] = classify_photons(x_atc[i1], h_ph[i1],
             h_win_width, i2, K=5, MIN_PH=5, MIN_XSPREAD=1.0,
             MIN_HSPREAD=0.01, METHOD='linear')
 
