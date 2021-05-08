@@ -5,11 +5,9 @@ Citation Information
 References
 ##########
 
-This software is developed with the goal of supporting science applications for
-the NASA ICESat-2 mission. This work was initially supported by an appointment to
-the NASA Postdoctoral Program at NASA Goddard Space Flight Center, administered
-by Universities Space Research Association under contract with NASA. This work
-is developed in conjunction with other ICESat-2 projects.
+``YAPC`` is developed with the goal of supporting and simplifying science
+applications for the NASA ICESat-2 mission. This work is developed in
+conjunction with other ICESat-2 projects.
 
 Contributors
 ############
@@ -28,7 +26,7 @@ Problem Reports
 ###############
 
 If you have found a problem in these programs, or you would like to suggest an improvement or modification,
-please submit a `GitHub issue <https://github.com/tsutterley/read-ICESat-2/issues>`_ and we will get back to you.
+please submit a `GitHub issue <https://github.com/tsutterley/yapc/issues>`_ and we will get back to you.
 
 Dependencies
 ############
@@ -40,6 +38,12 @@ This software is also dependent on other commonly used Python packages:
 - `h5py: Python interface for Hierarchal Data Format 5 (HDF5) <http://h5py.org>`_
 - `scikit-learn: Machine Learning in Python <https://scikit-learn.org/stable/index.html>`_
 - `future: Compatibility layer between Python 2 and Python 3 <http://python-future.org/>`_
+
+Credits
+#######
+
+``YAPC`` was devised and is being developed by `Jeff Lee <https://science.gsfc.nasa.gov/sed/bio/jeffrey.e.lee>`_,
+Software Development Lead in the Cryospheric Sciences Laboratory at NASA Goddard Space Flight Center.
 
 Disclaimer
 ##########

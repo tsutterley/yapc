@@ -9,6 +9,7 @@ Program for ATL03 Global Geolocated Photon Data from the NASA ICESat-2 mission
     :caption: Getting Started
 
     getting_started/Install.rst
+    getting_started/Overview.rst
     getting_started/Contributing.rst
     getting_started/Resources.rst
     getting_started/Citations.rst
