@@ -26,6 +26,7 @@ Dependencies
 
  - `numpy: Scientific Computing Tools For Python <https://numpy.org>`_
  - `cython: C-extensions for Python <http://cython.org/>`_
+ - `h5py: Python interface for Hierarchal Data Format 5 (HDF5) <http://h5py.org>`_
  - `scikit-learn: Machine Learning in Python <https://scikit-learn.org/stable/index.html>`_
  - `future: Compatibility layer between Python 2 and Python 3 <http://python-future.org/>`_
 

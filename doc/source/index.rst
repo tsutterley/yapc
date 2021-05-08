@@ -18,4 +18,5 @@ Program for ATL03 Global Geolocated Photon Data from the NASA ICESat-2 mission
     :hidden:
     :caption: User Guide
 
+    user_guide/append_YAPC_ICESat2_ATL03.rst
     user_guide/classify_photons.rst

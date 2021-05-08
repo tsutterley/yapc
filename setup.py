@@ -24,6 +24,9 @@ with open('requirements.txt') as fh:
 with open('version.txt') as fh:
     version = fh.read()
 
+# list of all scripts to be included with package
+scripts=[os.path.join('scripts',f) for f in os.listdir('scripts') if f.endswith('.py')]
+
 setup(
     name='yapc',
     version=version,
@@ -48,6 +51,7 @@ setup(
     keywords=keywords,
     packages=find_packages(),
     install_requires=install_requires,
+    scripts=scripts,
     include_package_data=True,
     ext_modules=cythonize("yapc/*.pyx"),
 )
