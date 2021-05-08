@@ -15,7 +15,8 @@ YAPC
 .. |Documentation Status| image:: https://readthedocs.org/projects/yapc/badge/?version=latest
    :target: https://yapc.readthedocs.io/en/latest/?badge=latest
 
-Python version of the NASA Goddard Space Flight Center YAPC (*"Yet Another Photon Classifier"*) Program
+Python version of the NASA Goddard Space Flight Center YAPC (*"Yet Another Photon Classifier"*) Program.
+YAPC is a prototype photon classifer for the NASA ICESat-2 ATL03 Global Geolocated Photon product.
 
 - https://icesat-2.gsfc.nasa.gov
 - https://icesat-2-scf.gsfc.nasa.gov
@@ -38,10 +39,15 @@ Download
 | A zip archive of the latest version is available directly at:
 | https://github.com/tsutterley/yapc/archive/main.zip
 
+Credits
+#######
+
+YAPC was devised and is being developed by Jeff Lee (NASA Goddard Space Flight Center).
+This project contains work and contributions from the `scientific community <./CONTRIBUTORS.rst>`_.
+
 Disclaimer
 ##########
 
-This project contains work and contributions from the `scientific community <./CONTRIBUTORS.rst>`_.
 This program is not sponsored or maintained by the Universities Space Research Association (USRA) or NASA.
 It is provided here for your convenience but *with no guarantees whatsoever*.
 
