@@ -1,8 +1,7 @@
 import os
 import sys
 import logging
-from setuptools import setup, find_packages
-from Cython.Build import cythonize
+from setuptools import setup, Extension, find_packages
 
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 log = logging.getLogger()
@@ -26,6 +25,16 @@ with open('version.txt') as fh:
 
 # list of all scripts to be included with package
 scripts=[os.path.join('scripts',f) for f in os.listdir('scripts') if f.endswith('.py')]
+
+# Setuptools 18.0 properly handles Cython extensions.
+setup_requires=[
+    'setuptools>=18.0',
+    'cython',
+]
+# cythonize extensions
+ext_modules=[
+    Extension('yapc._dist_metrics', sources=['yapc/_dist_metrics.pyx'])
+]
 
 setup(
     name='yapc',
@@ -51,7 +60,8 @@ setup(
     keywords=keywords,
     packages=find_packages(),
     install_requires=install_requires,
+    setup_requires=setup_requires,
     scripts=scripts,
     include_package_data=True,
-    ext_modules=cythonize("yapc/*.pyx"),
+    ext_modules=ext_modules,
 )
