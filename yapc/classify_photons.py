@@ -80,7 +80,7 @@ def distance_matrix(u, v, p=1, window=[]):
         jj, = np.dot(d,np.ones((1,M))).astype(np.int)
         dx = np.abs(u[:,ii] - v[:,jj].T)
         # window differences for dimension
-        dx[dx > window[d]] = np.inf
+        dx[dx >= window[d]] = np.inf
         # add differences to total distance matrix
         D += np.power(dx,p)
     # convert distances to output units
