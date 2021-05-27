@@ -15,6 +15,7 @@ PYTHON DEPENDENCIES:
         https://github.com/scikit-learn/scikit-learn
 
 UPDATE HISTORY:
+    Updated 05/2021: use int64 to fix numpy deprecation warning
     Written 05/2021
 """
 import numpy as np
@@ -76,8 +77,8 @@ def distance_matrix(u, v, p=1, window=[]):
     # broadcast window to dimensions if using a square window
     window = np.broadcast_to(np.atleast_1d(window),(s,))
     for d in range(s):
-        ii, = np.dot(d,np.ones((1,N))).astype(np.int)
-        jj, = np.dot(d,np.ones((1,M))).astype(np.int)
+        ii, = np.dot(d,np.ones((1,N))).astype(np.int64)
+        jj, = np.dot(d,np.ones((1,M))).astype(np.int64)
         dx = np.abs(u[:,ii] - v[:,jj].T)
         # window differences for dimension
         dx[dx >= window[d]] = np.inf
