@@ -49,7 +49,7 @@ def append_ICESat2_ATL03(ATL03_file, VERBOSE=False, MODE=0o775):
     print('{0} -->'.format(ATL03_file)) if VERBOSE else None
 
     #-- attributes for the output variables
-    attrs = dict(snr_norm_ph={}, snr_ph={}, snr_conf_ph={})
+    attrs = dict(yapc_snr_norm={}, yapc_snr={}, yapc_conf={})
     #-- normalization for photon event weights
     attrs['yapc_snr_norm']['units'] = 1
     attrs['yapc_snr_norm']['long_name'] = "Maximum Weight"
