@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 classify_photons.py
-Written by Aimee Gibbons and Tyler Sutterley (05/2021)
+Written by Aimee Gibbons and Tyler Sutterley (08/2021)
 Yet Another Photon Classifier for ATL03 Geolocated Photon Data
 
 PYTHON DEPENDENCIES:
@@ -15,6 +15,7 @@ PYTHON DEPENDENCIES:
         https://github.com/scikit-learn/scikit-learn
 
 UPDATE HISTORY:
+    Updated 08/2021: update algorithm to match current GSFC version
     Updated 05/2021: use int64 to fix numpy deprecation warning
     Written 05/2021
 """
@@ -89,7 +90,7 @@ def distance_matrix(u, v, p=1, window=[]):
 
 # PURPOSE: use the GSFC YAPC k-nearest neighbors algorithm to determine
 # weights for each photon event within an ATL03 major frame
-def classify_photons(x, h, h_win_width, indices, K=5, MIN_PH=5,
+def classify_photons(x, h, h_win_width, indices, K=3, MIN_PH=3,
     MIN_XSPREAD=1.0, MIN_HSPREAD=0.01, METHOD='linear'):
     """
     Use the NASA GSFC YAPC k-nearest neighbors algorithm to determine
@@ -132,14 +133,16 @@ def classify_photons(x, h, h_win_width, indices, K=5, MIN_PH=5,
     density = n_pe/(xspread*h_win_width)
     # minimum area to contain minimum number of photon events
     area_min = MIN_PH/density
+    # minimum length of a square containing MIN_PH
+    length_min = np.sqrt(area_min)
     # calculate horizontal and vertical window sizes
-    win_x = 0.75*MIN_PH*np.sqrt(density)
-    win_h = 0.25*MIN_PH*np.sqrt(density)
+    win_x = 1.5*length_min
+    win_h = 0.5*length_min
     # reduce to a buffered window around major frame
-    xmin = np.min(x[indices]) - win_x
-    xmax = np.max(x[indices]) + win_x
-    hmin = np.min(h[indices]) - win_h
-    hmax = np.max(h[indices]) + win_h
+    xmin = np.min(x[indices]) - win_x/2.0
+    xmax = np.max(x[indices]) + win_x/2.0
+    hmin = np.min(h[indices]) - win_h/2.0
+    hmax = np.max(h[indices]) + win_h/2.0
     iwin, = np.nonzero((x >= xmin) & (x <= xmax) & (h >= hmin) & (h <= hmax))
     # method of calculating photon event weights
     if (METHOD == 'ball_tree'):

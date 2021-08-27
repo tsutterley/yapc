@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-append_YAPC_ICESat2_ATL03.py (05/2021)
+append_YAPC_ICESat2_ATL03.py (08/2021)
 Reads ICESat-2 ATL03 data files and appends photon classification flags
     from YAPC (Yet Another Photon Classifier)
 
@@ -27,6 +27,7 @@ PROGRAM DEPENDENCIES:
     classify_photons.py: Yet Another Photon Classifier for Geolocated Photon Data
 
 UPDATE HISTORY:
+    Updated 08/2021: using YAPC HDF5 variable names to match ASAS version
     Written 05/2021
 """
 from __future__ import print_function
@@ -48,39 +49,39 @@ def append_ICESat2_ATL03(ATL03_file, VERBOSE=False, MODE=0o775):
     print('{0} -->'.format(ATL03_file)) if VERBOSE else None
 
     #-- attributes for the output variables
-    attrs = dict(snr_norm_ph={}, snr_ph={}, snr_conf_ph={})
+    attrs = dict(yapc_snr_norm={}, yapc_snr={}, yapc_conf={})
     #-- normalization for photon event weights
-    attrs['snr_norm_ph']['units'] = 1
-    attrs['snr_norm_ph']['long_name'] = "Maximum Weight"
-    attrs['snr_norm_ph']['description'] = ("Maximum weight from the photon "
+    attrs['yapc_snr_norm']['units'] = 1
+    attrs['yapc_snr_norm']['long_name'] = "Maximum Weight"
+    attrs['yapc_snr_norm']['description'] = ("Maximum weight from the photon "
         "event classifier used as normalization for calculating the"
         "signal-to-noise ratio")
-    attrs['snr_norm_ph']['source'] = "YAPC"
-    attrs['snr_norm_ph']['contentType'] = "qualityInformation"
-    attrs['snr_norm_ph']['coordinates'] = ("delta_time reference_photon_lat "
+    attrs['yapc_snr_norm']['source'] = "YAPC"
+    attrs['yapc_snr_norm']['contentType'] = "qualityInformation"
+    attrs['yapc_snr_norm']['coordinates'] = ("delta_time reference_photon_lat "
         "reference_photon_lon")
     #-- signal-to-noise ratio for each photon
-    attrs['snr_ph']['units'] = 100
-    attrs['snr_ph']['long_name'] = "Signal-to-Noise Ratio"
-    attrs['snr_ph']['description'] = ("Signal-to-Noise ratio calculated using "
+    attrs['yapc_snr']['units'] = 100
+    attrs['yapc_snr']['long_name'] = "Signal-to-Noise Ratio"
+    attrs['yapc_snr']['description'] = ("Signal-to-Noise ratio calculated using "
         "the photon event classifier, normalized using the maximum weight "
         "in an ATL03 segment")
-    attrs['snr_ph']['source'] = "YAPC"
-    attrs['snr_ph']['contentType'] = "qualityInformation"
-    attrs['snr_ph']['coordinates'] = "delta_time lat_ph lon_ph"
+    attrs['yapc_snr']['source'] = "YAPC"
+    attrs['yapc_snr']['contentType'] = "qualityInformation"
+    attrs['yapc_snr']['coordinates'] = "delta_time lat_ph lon_ph"
     #-- photon signal-to-noise confidence from photon classifier
-    attrs['snr_conf_ph']['units'] = 1
-    attrs['snr_conf_ph']['valid_min'] = 0
-    attrs['snr_conf_ph']['valid_max'] = 4
-    attrs['snr_conf_ph']['flag_values'] = [0,2,3,4]
-    attrs['snr_conf_ph']['flag_meanings'] = "noise low medium high"
-    attrs['snr_conf_ph']['long_name'] = "Photon Signal Confidence"
-    attrs['snr_conf_ph']['description'] = ("Confidence level associated with "
+    attrs['yapc_conf']['units'] = 1
+    attrs['yapc_conf']['valid_min'] = 0
+    attrs['yapc_conf']['valid_max'] = 4
+    attrs['yapc_conf']['flag_values'] = [0,2,3,4]
+    attrs['yapc_conf']['flag_meanings'] = "noise low medium high"
+    attrs['yapc_conf']['long_name'] = "Photon Signal Confidence"
+    attrs['yapc_conf']['description'] = ("Confidence level associated with "
         "each photon event selected as signal from the photon classifier "
         "(0=noise; 2=low; 3=med; 4=high).")
-    attrs['snr_conf_ph']['source'] = "YAPC"
-    attrs['snr_conf_ph']['contentType'] = "qualityInformation"
-    attrs['snr_conf_ph']['coordinates'] = "delta_time lat_ph lon_ph"
+    attrs['yapc_conf']['source'] = "YAPC"
+    attrs['yapc_conf']['contentType'] = "qualityInformation"
+    attrs['yapc_conf']['coordinates'] = "delta_time lat_ph lon_ph"
 
     #-- read each input beam within the file
     IS2_atl03_beams = []
@@ -154,7 +155,7 @@ def append_ICESat2_ATL03(ATL03_file, VERBOSE=False, MODE=0o775):
             i2, = np.nonzero(photon_mframes[i1] == unique_major_frames[iteration])
             #-- calculate photon event weights
             pe_weights[i1[i2]] = classify_photons(x_atc[i1], h_ph[i1],
-                h_win_width, i2, K=5, MIN_PH=5, MIN_XSPREAD=1.0,
+                h_win_width, i2, K=3, MIN_PH=3, MIN_XSPREAD=1.0,
                 MIN_HSPREAD=0.01, METHOD='linear')
 
         #-- for each 20m segment
@@ -180,33 +181,33 @@ def append_ICESat2_ATL03(ATL03_file, VERBOSE=False, MODE=0o775):
         pe_sig_conf[photon_snr >= 80] = 4
 
         #-- segment signal-to-noise ratio normalization from photon classifier
-        val = '{0}/{1}/{2}'.format(gtx,'geolocation','snr_norm_ph')
+        val = '{0}/{1}/{2}'.format(gtx,'geolocation','yapc_snr_norm')
         h5 = fileID.create_dataset(val, np.shape(snr_norm), data=snr_norm,
             dtype=snr_norm.dtype, compression='gzip')
         #-- make dimension
         h5.make_scale('delta_time')
         #-- add HDF5 variable attributes
-        for att_name,att_val in attrs['snr_norm_ph'].items():
+        for att_name,att_val in attrs['yapc_snr_norm'].items():
             h5.attrs[att_name] = att_val
 
         #-- photon signal-to-noise ratio from photon classifier
-        val = '{0}/{1}/{2}'.format(gtx,'heights','snr_ph')
+        val = '{0}/{1}/{2}'.format(gtx,'heights','yapc_snr')
         h5 = fileID.create_dataset(val, np.shape(photon_snr), data=photon_snr,
             dtype=photon_snr.dtype, compression='gzip')
         #-- make dimension
         h5.make_scale('delta_time')
         #-- add HDF5 variable attributes
-        for att_name,att_val in attrs['snr_ph'].items():
+        for att_name,att_val in attrs['yapc_snr'].items():
             h5.attrs[att_name] = att_val
 
         #-- photon signal-to-noise confidence from photon classifier
-        val = '{0}/{1}/{2}'.format(gtx,'heights','snr_conf_ph')
+        val = '{0}/{1}/{2}'.format(gtx,'heights','yapc_conf')
         h5 = fileID.create_dataset(val, np.shape(pe_sig_conf), data=pe_sig_conf,
             dtype=pe_sig_conf.dtype, compression='gzip')
         #-- make dimension
         h5.make_scale('delta_time')
         #-- add HDF5 variable attributes
-        for att_name,att_val in attrs['snr_conf_ph'].items():
+        for att_name,att_val in attrs['yapc_conf'].items():
             h5.attrs[att_name] = att_val
 
     #-- close the HDF5 file
