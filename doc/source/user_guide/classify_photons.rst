@@ -98,6 +98,8 @@ General Methods
 
         ``MIN_HSPREAD``: minimum window of heights for photon events
 
+        ``ASPECT``: aspect ratio of x and h window
+
         ``METHOD``: algorithm for computing photon event weights
 
             ``'ball_tree'``: use scikit.learn.BallTree with custom distance metric

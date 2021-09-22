@@ -4,9 +4,9 @@ append_YAPC_ICESat2_ATL03.py
 
 - Reads ICESat-2 `ATL03 geolocated photon height product files <https://nsidc.org/data/ATL03>`_ and appends photon classification flags from YAPC (*Yet Another Photon Classifier*)
 
-    * ``snr_norm_ph``: segment level photon weight normalization
-    * ``snr_ph``: the photon level normalized YAPC signal-to-noise ratio
-    * ``snr_conf_ph``: YAPC-based confidence levels
+    * ``yapc_snr_norm``: segment level photon weight normalization
+    * ``yapc_snr``: the photon level normalized YAPC signal-to-noise ratio
+    * ``yapc_conf``: YAPC-based confidence levels
 
  Calling Sequence
  ================
@@ -27,5 +27,15 @@ Inputs
 Command Line Options
 ####################
 
+- ``--K X``, ``-k X``: number of values for KNN algorithm
+- ``--min-ph X``: minimum number of photons for a major frame to be valid
+- ``--min-x-spread X``: minimum along-track spread of photon events
+- ``--min-h-spread X``: minimum window of heights for photon events
+- ``--aspect X``: aspect ratio of x and h window
+- ``--method X``: algorithm for computing photon event weights
+
+    * ``'ball_tree'``: use scikit.learn.BallTree with custom distance metric
+    * ``'linear'``: use a brute-force approach with linear algebra
+    * ``'brute'``: use a brute-force approach
 - ``-V``, ``--verbose``: output module information for process
 - ``-M X``, ``--mode X``: permissions mode of output HDF5 datasets
