@@ -233,15 +233,17 @@ def append_YAPC_ICESat2_ATL03(ATL03_file, **kwargs):
                 (photon_mframes <= unique_major_frames[i]+1))
             #-- indices for the major frame within the buffered window
             i2, = np.nonzero(photon_mframes[i1] == unique_major_frames[i])
+            #-- number of photons in major frame
+            mf_ph_cnt[i] = len(np.atleast_1d(i2))
             #-- calculate photon event weights
             pe_weights[i1[i2]],win_x[i],win_h[i] = classify_photons(x_atc[i1],
                 h_ph[i1], h_win_width, i2, **kwargs)
-            #-- index of first photon in major frame (1-based)
-            mf_ph_index_beg[i] = np.atleast_1d(i1[i2])[0] + 1
-            #-- number of photons in major frame
-            mf_ph_cnt[i] = len(np.atleast_1d(i2))
-            #-- calculate average delta time of major frame
-            mf_delta_time[i] = np.mean(delta_time[i1[i2]])
+            #-- calculate major frame variables
+            if (mf_ph_cnt[i] > 0):
+                #-- index of first photon in major frame (1-based)
+                mf_ph_index_beg[i] = np.atleast_1d(i1[i2])[0] + 1
+                #-- calculate average delta time of major frame
+                mf_delta_time[i] = np.mean(delta_time[i1[i2]])
 
         #-- for each 20m segment
         snr_norm = np.zeros((n_seg),dtype=np.uint8)
