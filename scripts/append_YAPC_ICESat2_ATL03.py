@@ -46,9 +46,9 @@ from __future__ import print_function
 import os
 import re
 import h5py
+import yapc
 import argparse
 import numpy as np
-from yapc.classify_photons import classify_photons
 
 #-- PURPOSE: reads ICESat-2 ATL03 HDF5 files
 #-- computes photon classifications heights over 20m segments
@@ -239,7 +239,7 @@ def append_YAPC_ICESat2_ATL03(ATL03_file, **kwargs):
             #-- check if there are photons in major frame
             if (mf_ph_cnt[i] > 0):
                 #-- calculate photon event weights
-                pe_weights[i1[i2]],win_x[i],win_h[i] = classify_photons(
+                pe_weights[i1[i2]],win_x[i],win_h[i] = yapc.classify_photons(
                     x_atc[i1], h_ph[i1], h_win_width, i2, **kwargs)
                 #-- index of first photon in major frame (1-based)
                 mf_ph_index_beg[i] = np.atleast_1d(i1[i2])[0] + 1
@@ -274,6 +274,11 @@ def append_YAPC_ICESat2_ATL03(ATL03_file, **kwargs):
 
         #-- major frame variables
         fileID[gtx].create_group('yapc_window')
+        fileID[gtx]['yapc_window'].attrs['description'] = ('Dynamic '
+            'selection window parameters for photon classifier')
+        fileID[gtx]['yapc_window'].attrs['version'] = yapc.version.full_version
+        for att_name in ['K','min_ph','min_xspread','min_hspread','aspect']:
+            fileID[gtx]['yapc_window'].attrs[att_name] = kwargs[att_name]
 
         #-- major frame delta_time
         val = '{0}/{1}/{2}'.format(gtx,'yapc_window','delta_time')
