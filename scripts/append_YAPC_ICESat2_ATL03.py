@@ -186,8 +186,6 @@ def append_YAPC_ICESat2_ATL03(ATL03_file, **kwargs):
         x_atc = fileID[gtx]['heights']['dist_ph_along'][:].copy()
         #-- photon event heights
         h_ph = fileID[gtx]['heights']['h_ph'][:].copy()
-        #-- delta time of photon events
-        delta_time = fileID[gtx]['heights']['delta_time'][:].copy()
         #-- for each 20m segment
         for j,_ in enumerate(Segment_ID):
             #-- index for 20m segment j
@@ -207,6 +205,7 @@ def append_YAPC_ICESat2_ATL03(ATL03_file, **kwargs):
         major_frame_count = len(unique_major_frames)
         tlm_height_band1 = fileID[gtx]['bckgrd_atlas']['tlm_height_band1'][:].copy()
         tlm_height_band2 = fileID[gtx]['bckgrd_atlas']['tlm_height_band2'][:].copy()
+        delta_time = fileID[gtx]['bckgrd_atlas']['delta_time'][:].copy()
         #-- photon event weights
         pe_weights = np.zeros((n_pe),dtype=np.float64)
         #-- photon signal-to-noise ratios from classifier
@@ -228,6 +227,8 @@ def append_YAPC_ICESat2_ATL03(ATL03_file, **kwargs):
             idx = unique_index[i]
             #-- sum of 2 telemetry band widths for major frame
             h_win_width = tlm_height_band1[idx] + tlm_height_band2[idx]
+            #-- calculate average delta time of major frame
+            mf_delta_time[i] = np.mean(delta_time[idx])
             #-- photon indices for major frame (buffered by 1 on each side)
             i1, = np.nonzero((photon_mframes >= unique_major_frames[i]-1) &
                 (photon_mframes <= unique_major_frames[i]+1))
@@ -235,15 +236,13 @@ def append_YAPC_ICESat2_ATL03(ATL03_file, **kwargs):
             i2, = np.nonzero(photon_mframes[i1] == unique_major_frames[i])
             #-- number of photons in major frame
             mf_ph_cnt[i] = len(np.atleast_1d(i2))
-            #-- calculate photon event weights
-            pe_weights[i1[i2]],win_x[i],win_h[i] = classify_photons(x_atc[i1],
-                h_ph[i1], h_win_width, i2, **kwargs)
-            #-- calculate major frame variables
+            #-- check if there are photons in major frame
             if (mf_ph_cnt[i] > 0):
+                #-- calculate photon event weights
+                pe_weights[i1[i2]],win_x[i],win_h[i] = classify_photons(
+                    x_atc[i1], h_ph[i1], h_win_width, i2, **kwargs)
                 #-- index of first photon in major frame (1-based)
                 mf_ph_index_beg[i] = np.atleast_1d(i1[i2])[0] + 1
-                #-- calculate average delta time of major frame
-                mf_delta_time[i] = np.mean(delta_time[i1[i2]])
 
         #-- for each 20m segment
         snr_norm = np.zeros((n_seg),dtype=np.uint8)
