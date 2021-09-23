@@ -62,8 +62,8 @@ Calling Sequence
         i2, = np.nonzero(photon_mframes[i1] == unique_major_frames[iteration])
         # calculate photon event weights
         pe_weights[i1[i2]] = classify_photons(x_atc[i1], h_ph[i1],
-            h_win_width, i2, K=3, MIN_PH=3, MIN_XSPREAD=1.0,
-            MIN_HSPREAD=0.01, METHOD='linear')
+            h_win_width, i2, K=3, min_ph=3, min_xspread=1.0,
+            min_hspread=0.01, method='linear')
 
 
 `Source code`__
@@ -74,7 +74,7 @@ Calling Sequence
 General Methods
 ===============
 
-.. method:: yapc.classify_photons.classify_photons(x, h, h_win_width, indices, K=5, MIN_PH=5, MIN_XSPREAD=1.0, MIN_HSPREAD=0.01, METHOD='ball_tree')
+.. method:: yapc.classify_photons.classify_photons(x, h, h_win_width, indices, K=3, min_ph=3, min_xspread=1.0, min_hspread=0.01, method='linear', return_window=False)
 
     Use the NASA GSFC YAPC k-nearest neighbors algorithm to determine weights for each photon event within an ATL03 major frame
 
@@ -92,21 +92,23 @@ General Methods
 
         ``K``: number of values for KNN algorithm
 
-        ``MIN_PH``: minimum number of photons for a major frame to be valid
+        ``min_ph``: minimum number of photons for a major frame to be valid
 
-        ``MIN_XSPREAD``: minimum along-track spread of photon events
+        ``min_xspread``: minimum along-track spread of photon events
 
-        ``MIN_HSPREAD``: minimum window of heights for photon events
+        ``min_hspread``: minimum window of heights for photon events
 
-        ``ASPECT``: aspect ratio of x and h window
+        ``aspect``: aspect ratio of x and h window
 
-        ``METHOD``: algorithm for computing photon event weights
+        ``method``: algorithm for computing photon event weights
 
             ``'ball_tree'``: use scikit.learn.BallTree with custom distance metric
 
             ``'linear'``: use a brute-force approach with linear algebra
 
             ``'brute'``: use a brute-force approach
+
+        ``return_window``: return the width and height of the selection window
 
 
 .. method:: yapc.classify_photons.windowed_manhattan(u, v, window=[], w=None)

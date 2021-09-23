@@ -37,6 +37,7 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 09/2021: added more YAPC options for photon distance classifier
+        create YAPC group and output major frame variables to HDF5
     Updated 08/2021: using YAPC HDF5 variable names to match ASAS version
     Written 05/2021
 """
@@ -53,22 +54,70 @@ from yapc.classify_photons import classify_photons
 #-- computes photon classifications heights over 20m segments
 def append_YAPC_ICESat2_ATL03(ATL03_file, **kwargs):
     kwargs.setdefault('K',3)
-    kwargs.setdefault('MIN_PH',3)
-    kwargs.setdefault('MIN_XSPREAD',1.0)
-    kwargs.setdefault('MIN_HSPREAD',0.01)
-    kwargs.setdefault('ASPECT',3.0)
-    kwargs.setdefault('METHOD','linear')
-    kwargs.setdefault('VERBOSE',False)
-    kwargs.setdefault('MODE',0o775)
+    kwargs.setdefault('min_ph',3)
+    kwargs.setdefault('min_xspread',1.0)
+    kwargs.setdefault('min_hspread',0.01)
+    kwargs.setdefault('aspect',3.0)
+    kwargs.setdefault('method','linear')
+    kwargs.setdefault('return_window',True)
+    kwargs.setdefault('verbose',False)
+    kwargs.setdefault('mode',0o775)
 
     #-- Open the HDF5 file for appending
     fileID = h5py.File(ATL03_file, 'a')
     #-- output information for file
-    print('{0} -->'.format(ATL03_file)) if kwargs['VERBOSE'] else None
+    print('{0} -->'.format(ATL03_file)) if kwargs['verbose'] else None
 
     #-- attributes for the output variables
-    attrs = dict(yapc_snr_norm={}, yapc_snr={}, yapc_conf={})
+    attrs = {}
+    #-- major frame delta_time
+    attrs['delta_time'] = {}
+    attrs['delta_time']['units'] = "seconds since 2018-01-01"
+    attrs['delta_time']['long_name'] = "Elapsed GPS seconds"
+    attrs['delta_time']['standard_name'] = "time"
+    attrs['delta_time']['calendar'] = "standard"
+    attrs['delta_time']['description'] = ("Number of GPS seconds since the ATLAS SDP epoch. "
+        "The ATLAS Standard Data Products (SDP) epoch offset is defined within "
+        "/ancillary_data/atlas_sdp_gps_epoch as the number of GPS seconds between "
+        "the GPS epoch (1980-01-06T00:00:00.000000Z UTC) and the ATLAS SDP epoch. By "
+        "adding the offset contained within atlas_sdp_gps_epoch to delta time parameters, "
+        "the time in gps_seconds relative to the GPS epoch can be computed.")
+    attrs['delta_time']['contentType'] = "physicalMeasurement"
+    #-- index of first photon in each major frame
+    attrs['ph_index_beg'] = {}
+    attrs['ph_index_beg']['units'] = 1
+    attrs['ph_index_beg']['long_name'] = "Number of photons"
+    attrs['ph_index_beg']['description'] = ("Index (1-based) of first photon within each "
+        "major frame. Use in conjunction with mf_ph_cnt.")
+    attrs['ph_index_beg']['source'] = "derived"
+    attrs['ph_index_beg']['contentType'] = "referenceInformation"
+    attrs['ph_index_beg']['coordinates'] = "delta_time"
+    #-- number of photons in each major frame
+    attrs['mf_ph_cnt'] = {}
+    attrs['mf_ph_cnt']['units'] = 1
+    attrs['mf_ph_cnt']['long_name'] = "Number of photons"
+    attrs['mf_ph_cnt']['description'] = "Number of photon events in each major frame"
+    attrs['mf_ph_cnt']['source'] = "derived"
+    attrs['mf_ph_cnt']['contentType'] = "referenceInformation"
+    attrs['mf_ph_cnt']['coordinates'] = "delta_time"
+    #-- width in meters of the selection window
+    attrs['win_x'] = {}
+    attrs['win_x']['units'] = "meters"
+    attrs['win_x']['long_name'] = "Window width"
+    attrs['win_x']['description'] = "Width in meters of the selection window"
+    attrs['win_x']['source'] = "YAPC"
+    attrs['win_x']['contentType'] = "referenceInformation"
+    attrs['win_x']['coordinates'] = "delta_time"
+    #-- height in meters of the selection window
+    attrs['win_h'] = {}
+    attrs['win_h']['units'] = "meters"
+    attrs['win_h']['long_name'] = "Window height"
+    attrs['win_h']['description'] = "Height in meters of the selection window"
+    attrs['win_h']['source'] = "YAPC"
+    attrs['win_h']['contentType'] = "referenceInformation"
+    attrs['win_h']['coordinates'] = "delta_time"
     #-- normalization for photon event weights
+    attrs['yapc_snr_norm'] = {}
     attrs['yapc_snr_norm']['units'] = 1
     attrs['yapc_snr_norm']['long_name'] = "Maximum Weight"
     attrs['yapc_snr_norm']['description'] = ("Maximum weight from the photon "
@@ -79,6 +128,7 @@ def append_YAPC_ICESat2_ATL03(ATL03_file, **kwargs):
     attrs['yapc_snr_norm']['coordinates'] = ("delta_time reference_photon_lat "
         "reference_photon_lon")
     #-- signal-to-noise ratio for each photon
+    attrs['yapc_snr'] = {}
     attrs['yapc_snr']['units'] = 100
     attrs['yapc_snr']['long_name'] = "Signal-to-Noise Ratio"
     attrs['yapc_snr']['description'] = ("Signal-to-Noise ratio calculated using "
@@ -88,6 +138,7 @@ def append_YAPC_ICESat2_ATL03(ATL03_file, **kwargs):
     attrs['yapc_snr']['contentType'] = "qualityInformation"
     attrs['yapc_snr']['coordinates'] = "delta_time lat_ph lon_ph"
     #-- photon signal-to-noise confidence from photon classifier
+    attrs['yapc_conf'] = {}
     attrs['yapc_conf']['units'] = 1
     attrs['yapc_conf']['valid_min'] = 0
     attrs['yapc_conf']['valid_max'] = 4
@@ -116,7 +167,7 @@ def append_YAPC_ICESat2_ATL03(ATL03_file, **kwargs):
 
     #-- for each input beam within the file
     for gtx in sorted(IS2_atl03_beams):
-        print(gtx) if kwargs['VERBOSE'] else None
+        print(gtx) if kwargs['verbose'] else None
         #-- ATL03 Segment ID
         Segment_ID = fileID[gtx]['geolocation']['segment_id'][:]
         #-- number of ATL03 20 meter segments
@@ -135,6 +186,8 @@ def append_YAPC_ICESat2_ATL03(ATL03_file, **kwargs):
         x_atc = fileID[gtx]['heights']['dist_ph_along'][:].copy()
         #-- photon event heights
         h_ph = fileID[gtx]['heights']['h_ph'][:].copy()
+        #-- delta time of photon events
+        delta_time = fileID[gtx]['heights']['delta_time'][:].copy()
         #-- for each 20m segment
         for j,_ in enumerate(Segment_ID):
             #-- index for 20m segment j
@@ -160,20 +213,35 @@ def append_YAPC_ICESat2_ATL03(ATL03_file, **kwargs):
         photon_snr = np.zeros((n_pe),dtype=np.uint8)
         #-- photon confidence levels from classifier
         pe_sig_conf = np.zeros((n_pe),dtype=np.uint8)
+        #-- selection window sizes
+        win_x = np.zeros((major_frame_count))
+        win_h = np.zeros((major_frame_count))
+        #-- index of first photon in major frame
+        mf_ph_index_beg = np.zeros((major_frame_count),dtype=int)
+        #-- number of photons in major frame
+        mf_ph_cnt = np.zeros((major_frame_count),dtype=int)
+        #-- average delta time of major frame
+        mf_delta_time = np.zeros((major_frame_count))
         #-- run for each major frame (distributed over comm.size # of processes)
-        for iteration in range(major_frame_count):
+        for i in range(major_frame_count):
             #-- background atlas index for iteration
-            idx = unique_index[iteration]
+            idx = unique_index[i]
             #-- sum of 2 telemetry band widths for major frame
             h_win_width = tlm_height_band1[idx] + tlm_height_band2[idx]
             #-- photon indices for major frame (buffered by 1 on each side)
-            i1, = np.nonzero((photon_mframes >= unique_major_frames[iteration]-1) &
-                (photon_mframes <= unique_major_frames[iteration]+1))
+            i1, = np.nonzero((photon_mframes >= unique_major_frames[i]-1) &
+                (photon_mframes <= unique_major_frames[i]+1))
             #-- indices for the major frame within the buffered window
-            i2, = np.nonzero(photon_mframes[i1] == unique_major_frames[iteration])
+            i2, = np.nonzero(photon_mframes[i1] == unique_major_frames[i])
             #-- calculate photon event weights
-            pe_weights[i1[i2]] = classify_photons(x_atc[i1], h_ph[i1],
-                h_win_width, i2, **kwargs)
+            pe_weights[i1[i2]],win_x[i],win_h[i] = classify_photons(x_atc[i1],
+                h_ph[i1], h_win_width, i2, **kwargs)
+            #-- index of first photon in major frame (1-based)
+            mf_ph_index_beg[i] = np.atleast_1d(i1[i2])[0] + 1
+            #-- number of photons in major frame
+            mf_ph_cnt[i] = len(np.atleast_1d(i2))
+            #-- calculate average delta time of major frame
+            mf_delta_time[i] = np.mean(delta_time[i1[i2]])
 
         #-- for each 20m segment
         snr_norm = np.zeros((n_seg),dtype=np.uint8)
@@ -202,6 +270,65 @@ def append_YAPC_ICESat2_ATL03(ATL03_file, **kwargs):
         pe_sig_conf[photon_snr >= 25] = 2
         pe_sig_conf[photon_snr >= 60] = 3
         pe_sig_conf[photon_snr >= 80] = 4
+
+        #-- major frame variables
+        fileID[gtx].create_group('yapc_window')
+
+        #-- major frame delta_time
+        val = '{0}/{1}/{2}'.format(gtx,'yapc_window','delta_time')
+        h5 = fileID.create_dataset(val, np.shape(mf_delta_time),
+            data=mf_delta_time, dtype=mf_delta_time.dtype,
+            compression='gzip')
+        #-- make dimension
+        h5.make_scale('delta_time')
+        #-- add HDF5 variable attributes
+        for att_name,att_val in attrs['delta_time'].items():
+            h5.attrs[att_name] = att_val
+
+        #-- index of first photon in each major frame
+        val = '{0}/{1}/{2}'.format(gtx,'yapc_window','ph_index_beg')
+        h5 = fileID.create_dataset(val, np.shape(mf_ph_index_beg),
+            data=mf_ph_index_beg, dtype=mf_ph_index_beg.dtype,
+            compression='gzip')
+        #-- attach dimensions
+        for i,dim in enumerate(['delta_time']):
+            h5.dims[i].attach_scale(fileID[gtx]['yapc_window'][dim])
+        #-- add HDF5 variable attributes
+        for att_name,att_val in attrs['ph_index_beg'].items():
+            h5.attrs[att_name] = att_val
+
+        #-- number of photons in each major frame
+        val = '{0}/{1}/{2}'.format(gtx,'yapc_window','mf_ph_cnt')
+        h5 = fileID.create_dataset(val, np.shape(mf_ph_cnt),
+            data=mf_ph_cnt, dtype=mf_ph_cnt.dtype, compression='gzip')
+        #-- attach dimensions
+        for i,dim in enumerate(['delta_time']):
+            h5.dims[i].attach_scale(fileID[gtx]['yapc_window'][dim])
+        #-- add HDF5 variable attributes
+        for att_name,att_val in attrs['mf_ph_cnt'].items():
+            h5.attrs[att_name] = att_val
+
+        #-- width in meters of the selection window
+        val = '{0}/{1}/{2}'.format(gtx,'yapc_window','win_x')
+        h5 = fileID.create_dataset(val, np.shape(win_x),
+            data=win_x, dtype=win_x.dtype, compression='gzip')
+        #-- attach dimensions
+        for i,dim in enumerate(['delta_time']):
+            h5.dims[i].attach_scale(fileID[gtx]['yapc_window'][dim])
+        #-- add HDF5 variable attributes
+        for att_name,att_val in attrs['win_x'].items():
+            h5.attrs[att_name] = att_val
+
+        #-- height in meters of the selection window
+        val = '{0}/{1}/{2}'.format(gtx,'yapc_window','win_h')
+        h5 = fileID.create_dataset(val, np.shape(win_x),
+            data=win_h, dtype=win_h.dtype, compression='gzip')
+        #-- attach dimensions
+        for i,dim in enumerate(['delta_time']):
+            h5.dims[i].attach_scale(fileID[gtx]['yapc_window'][dim])
+        #-- add HDF5 variable attributes
+        for att_name,att_val in attrs['win_h'].items():
+            h5.attrs[att_name] = att_val
 
         #-- segment signal-to-noise ratio normalization from photon classifier
         val = '{0}/{1}/{2}'.format(gtx,'geolocation','yapc_snr_norm')
@@ -239,7 +366,7 @@ def append_YAPC_ICESat2_ATL03(ATL03_file, **kwargs):
     #-- close the HDF5 file
     fileID.close()
     #-- change the permissions mode
-    os.chmod(ATL03_file, kwargs['MODE'])
+    os.chmod(ATL03_file, kwargs['mode'])
 
 #-- Main program that calls append_YAPC_ICESat2_ATL03()
 def main():
@@ -292,13 +419,13 @@ def main():
     for ATL03_file in args.infile:
         append_YAPC_ICESat2_ATL03(ATL03_file,
             K=args.K,
-            MIN_PH=args.min_ph,
-            MIN_XSPREAD=args.min_x_spread,
-            MIN_HSPREAD=args.min_h_spread,
-            ASPECT=args.aspect,
-            METHOD=args.method,
-            VERBOSE=args.verbose,
-            MODE=args.mode)
+            min_ph=args.min_ph,
+            min_xspread=args.min_x_spread,
+            min_hspread=args.min_h_spread,
+            aspect=args.aspect,
+            method=args.method,
+            verbose=args.verbose,
+            mode=args.mode)
 
 #-- run main program
 if __name__ == '__main__':
