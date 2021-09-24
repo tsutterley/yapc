@@ -17,6 +17,10 @@ COMMAND LINE OPTIONS:
         `'ball_tree'`: use scikit.learn.BallTree with custom distance metric
         `'linear'`: use a brute-force approach with linear algebra
         `'brute'`: use a brute-force approach
+    -O X, --output X: output file type
+        append: add photon classification flags to original ATL03 file
+        copy: add photon classification flags to a copied ATL03 file
+        reduce: create a new file with the photon classification flags
     -V, --verbose: Verbose output to track progress
     -M X, --mode X: Permission mode of files created
 
@@ -38,6 +42,7 @@ PROGRAM DEPENDENCIES:
 UPDATE HISTORY:
     Updated 09/2021: added more YAPC options for photon distance classifier
         create YAPC group and output major frame variables to HDF5
+        add output options for creating copied or reduced files
     Updated 08/2021: using YAPC HDF5 variable names to match ASAS version
     Written 05/2021
 """
@@ -47,12 +52,13 @@ import os
 import re
 import h5py
 import yapc
+import shutil
 import argparse
 import numpy as np
 
 #-- PURPOSE: reads ICESat-2 ATL03 HDF5 files
 #-- computes photon classifications heights over 20m segments
-def append_YAPC_ICESat2_ATL03(ATL03_file, **kwargs):
+def append_YAPC_ICESat2_ATL03(input_file, **kwargs):
     kwargs.setdefault('K',3)
     kwargs.setdefault('min_ph',3)
     kwargs.setdefault('min_xspread',1.0)
@@ -60,13 +66,25 @@ def append_YAPC_ICESat2_ATL03(ATL03_file, **kwargs):
     kwargs.setdefault('aspect',3.0)
     kwargs.setdefault('method','linear')
     kwargs.setdefault('return_window',True)
+    kwargs.setdefault('output','append')
     kwargs.setdefault('verbose',False)
     kwargs.setdefault('mode',0o775)
 
-    #-- Open the HDF5 file for appending
-    fileID = h5py.File(ATL03_file, 'a')
+    #-- compile regular expression operator for extracting data from ATL03 files
+    rx = re.compile(r'(processed_)?(ATL\d+)_(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})'
+        r'(\d{2})_(\d{4})(\d{2})(\d{2})_(\d{3})_(\d{2})(.*?).h5$')
+    #-- read ICESat-2 ATL03 HDF5 files (extract base parameters)
+    SUB,PRD,YY,MM,DD,HH,MN,SS,TRK,CYCL,GRAN,RL,VERS,AUX=rx.findall(input_file).pop()
+
+    #-- input/output directory
+    directory = os.path.dirname(input_file)
+    #-- Open the input HDF5 file for reading or appending
+    assert kwargs['output'] in ('append','copy','reduce')
+    mode = 'a' if (kwargs['output'] == 'append') else 'r'
+    f_in = h5py.File(input_file, mode=mode)
+
     #-- output information for file
-    print('{0} -->'.format(ATL03_file)) if kwargs['verbose'] else None
+    print('{0} -->'.format(input_file)) if kwargs['verbose'] else None
 
     #-- attributes for the output variables
     attrs = {}
@@ -76,19 +94,20 @@ def append_YAPC_ICESat2_ATL03(ATL03_file, **kwargs):
     attrs['delta_time']['long_name'] = "Elapsed GPS seconds"
     attrs['delta_time']['standard_name'] = "time"
     attrs['delta_time']['calendar'] = "standard"
-    attrs['delta_time']['description'] = ("Number of GPS seconds since the ATLAS SDP epoch. "
-        "The ATLAS Standard Data Products (SDP) epoch offset is defined within "
-        "/ancillary_data/atlas_sdp_gps_epoch as the number of GPS seconds between "
-        "the GPS epoch (1980-01-06T00:00:00.000000Z UTC) and the ATLAS SDP epoch. By "
-        "adding the offset contained within atlas_sdp_gps_epoch to delta time parameters, "
-        "the time in gps_seconds relative to the GPS epoch can be computed.")
+    attrs['delta_time']['description'] = ("Number of GPS seconds since the "
+        "ATLAS SDP epoch. The ATLAS Standard Data Products (SDP) epoch offset "
+        "is defined within /ancillary_data/atlas_sdp_gps_epoch as the number "
+        "of GPS seconds between the GPS epoch (1980-01-06T00:00:00.000000Z "
+        "UTC) and the ATLAS SDP epoch. By adding the offset contained within "
+        "atlas_sdp_gps_epoch to delta time parameters, the time in gps_seconds "
+        "relative to the GPS epoch can be computed.")
     attrs['delta_time']['contentType'] = "physicalMeasurement"
     #-- index of first photon in each major frame
     attrs['ph_index_beg'] = {}
     attrs['ph_index_beg']['units'] = 1
     attrs['ph_index_beg']['long_name'] = "Photon Index Begin"
-    attrs['ph_index_beg']['description'] = ("Index (1-based) of first photon within each "
-        "major frame. Use in conjunction with mf_ph_cnt.")
+    attrs['ph_index_beg']['description'] = ("Index (1-based) of first photon "
+        "within each major frame. Use in conjunction with mf_ph_cnt.")
     attrs['ph_index_beg']['source'] = "derived"
     attrs['ph_index_beg']['contentType'] = "referenceInformation"
     attrs['ph_index_beg']['coordinates'] = "delta_time"
@@ -96,7 +115,8 @@ def append_YAPC_ICESat2_ATL03(ATL03_file, **kwargs):
     attrs['mf_ph_cnt'] = {}
     attrs['mf_ph_cnt']['units'] = 1
     attrs['mf_ph_cnt']['long_name'] = "Number of photons"
-    attrs['mf_ph_cnt']['description'] = "Number of photon events in each major frame"
+    attrs['mf_ph_cnt']['description'] = ("Number of photon events in "
+        "each major frame")
     attrs['mf_ph_cnt']['source'] = "derived"
     attrs['mf_ph_cnt']['contentType'] = "referenceInformation"
     attrs['mf_ph_cnt']['coordinates'] = "delta_time"
@@ -154,38 +174,69 @@ def append_YAPC_ICESat2_ATL03(ATL03_file, **kwargs):
 
     #-- read each input beam within the file
     IS2_atl03_beams = []
-    for gtx in [k for k in fileID.keys() if bool(re.match(r'gt\d[lr]',k))]:
+    for gtx in [k for k in f_in.keys() if bool(re.match(r'gt\d[lr]',k))]:
         #-- check if subsetted beam contains data
         #-- check in both the geolocation and heights groups
         try:
-            fileID[gtx]['geolocation']['segment_id']
-            fileID[gtx]['heights']['delta_time']
+            f_in[gtx]['geolocation']['segment_id']
+            f_in[gtx]['heights']['delta_time']
         except KeyError:
             pass
         else:
             IS2_atl03_beams.append(gtx)
 
+    #-- open output file
+    if (kwargs['output'] == 'append'):
+        #-- copy filename and file object for output variables
+        output_file = input_file
+        f_out = f_in
+    elif (kwargs['output'] == 'copy'):
+        #-- Copy input file to a new appended ATL03 file
+        fargs=(SUB,PRD,YY,MM,DD,HH,MN,SS,TRK,CYCL,GRAN,RL,VERS,AUX)
+        file_format='{0}{1}_{2}{3}{4}{5}{6}{7}_{8}{9}{10}_{11}_{12}{13}_YAPC.h5'
+        output_file = os.path.join(directory,file_format.format(*fargs))
+        shutil.copyfile(input_file,output_file)
+        #-- Open the output HDF5 files for appending
+        f_out = h5py.File(output_file, 'a')
+    elif (kwargs['output'] == 'reduce'):
+        #-- create a new reduced file with only YAPC parameters
+        fargs=(SUB,PRD,YY,MM,DD,HH,MN,SS,TRK,CYCL,GRAN,RL,VERS,AUX)
+        file_format='{0}{1}_YAPC_{2}{3}{4}{5}{6}{7}_{8}{9}{10}_{11}_{12}{13}.h5'
+        output_file = os.path.join(directory,file_format.format(*fargs))
+        #-- Open the output HDF5 files for writing
+        f_out = h5py.File(output_file, 'w')
+        #-- copy file-level attributes from input to output
+        for att_name,att_val in f_in.attrs.items():
+            f_out.attrs[att_name] = att_val
+        #-- for each valid beam group in the input file
+        for gtx in IS2_atl03_beams:
+            copy_ATL03_beam_group(f_in, f_out, gtx)
+
+    #-- print output file if verbose
+    if kwargs['verbose']:
+        print('{0} ({1})'.format(output_file,kwargs['output']))
+
     #-- for each input beam within the file
     for gtx in sorted(IS2_atl03_beams):
         print(gtx) if kwargs['verbose'] else None
         #-- ATL03 Segment ID
-        Segment_ID = fileID[gtx]['geolocation']['segment_id'][:]
+        Segment_ID = f_in[gtx]['geolocation']['segment_id'][:]
         #-- number of ATL03 20 meter segments
         n_seg = len(Segment_ID)
         #-- number of photon events
-        n_pe, = fileID[gtx]['heights']['delta_time'].shape
+        n_pe, = f_in[gtx]['heights']['delta_time'].shape
 
         #-- first photon in the segment (convert to 0-based indexing)
-        Segment_Index_begin = fileID[gtx]['geolocation']['ph_index_beg'][:] - 1
+        Segment_Index_begin = f_in[gtx]['geolocation']['ph_index_beg'][:] - 1
         #-- number of photon events in the segment
-        Segment_PE_count = fileID[gtx]['geolocation']['segment_ph_cnt'][:]
+        Segment_PE_count = f_in[gtx]['geolocation']['segment_ph_cnt'][:]
         #-- along-track distance for each ATL03 segment
-        Segment_Distance = fileID[gtx]['geolocation']['segment_dist_x'][:]
+        Segment_Distance = f_in[gtx]['geolocation']['segment_dist_x'][:]
 
         #-- along-track and across-track distance for photon events
-        x_atc = fileID[gtx]['heights']['dist_ph_along'][:].copy()
+        x_atc = f_in[gtx]['heights']['dist_ph_along'][:].copy()
         #-- photon event heights
-        h_ph = fileID[gtx]['heights']['h_ph'][:].copy()
+        h_ph = f_in[gtx]['heights']['h_ph'][:].copy()
         #-- for each 20m segment
         for j,_ in enumerate(Segment_ID):
             #-- index for 20m segment j
@@ -199,53 +250,63 @@ def append_YAPC_ICESat2_ATL03(ATL03_file, **kwargs):
             x_atc[idx:idx+cnt] += Segment_Distance[j]
 
         #-- iterate over ATLAS major frames
-        photon_mframes = fileID[gtx]['heights']['pce_mframe_cnt'][:].copy()
-        pce_mframe_cnt = fileID[gtx]['bckgrd_atlas']['pce_mframe_cnt'][:].copy()
+        photon_mframes = f_in[gtx]['heights']['pce_mframe_cnt'][:].copy()
+        pce_mframe_cnt = f_in[gtx]['bckgrd_atlas']['pce_mframe_cnt'][:].copy()
         unique_major_frames,unique_index = np.unique(pce_mframe_cnt,return_index=True)
         major_frame_count = len(unique_major_frames)
-        tlm_height_band1 = fileID[gtx]['bckgrd_atlas']['tlm_height_band1'][:].copy()
-        tlm_height_band2 = fileID[gtx]['bckgrd_atlas']['tlm_height_band2'][:].copy()
-        delta_time = fileID[gtx]['bckgrd_atlas']['delta_time'][:].copy()
+        tlm_height_band1 = f_in[gtx]['bckgrd_atlas']['tlm_height_band1'][:].copy()
+        tlm_height_band2 = f_in[gtx]['bckgrd_atlas']['tlm_height_band2'][:].copy()
+        delta_time = f_in[gtx]['bckgrd_atlas']['delta_time'][:].copy()
+
+        #-- photon event variables
+        heights = {}
         #-- photon event weights
         pe_weights = np.zeros((n_pe),dtype=np.float64)
         #-- photon signal-to-noise ratios from classifier
-        photon_snr = np.zeros((n_pe),dtype=np.uint8)
+        heights['yapc_snr'] = np.zeros((n_pe),dtype=np.uint8)
         #-- photon confidence levels from classifier
-        pe_sig_conf = np.zeros((n_pe),dtype=np.uint8)
+        heights['yapc_conf'] = np.zeros((n_pe),dtype=np.uint8)
+
+        #-- output major frame variables
+        yapc_window = {}
         #-- selection window sizes
-        win_x = np.zeros((major_frame_count))
-        win_h = np.zeros((major_frame_count))
+        yapc_window['win_x'] = np.zeros((major_frame_count))
+        yapc_window['win_h'] = np.zeros((major_frame_count))
         #-- index of first photon in major frame
-        mf_ph_index_beg = np.zeros((major_frame_count),dtype=int)
+        yapc_window['ph_index_beg'] = np.zeros((major_frame_count),dtype=int)
         #-- number of photons in major frame
-        mf_ph_cnt = np.zeros((major_frame_count),dtype=int)
+        yapc_window['mf_ph_cnt'] = np.zeros((major_frame_count),dtype=int)
         #-- average delta time of major frame
-        mf_delta_time = np.zeros((major_frame_count))
-        #-- run for each major frame (distributed over comm.size # of processes)
+        yapc_window['delta_time'] = np.zeros((major_frame_count))
+
+        #-- run for each major frame
         for i in range(major_frame_count):
             #-- background atlas index for iteration
             idx = unique_index[i]
             #-- sum of 2 telemetry band widths for major frame
             h_win_width = tlm_height_band1[idx] + tlm_height_band2[idx]
             #-- calculate average delta time of major frame
-            mf_delta_time[i] = np.mean(delta_time[idx])
+            yapc_window['delta_time'][i] = np.mean(delta_time[idx])
             #-- photon indices for major frame (buffered by 1 on each side)
             i1, = np.nonzero((photon_mframes >= unique_major_frames[i]-1) &
                 (photon_mframes <= unique_major_frames[i]+1))
             #-- indices for the major frame within the buffered window
             i2, = np.nonzero(photon_mframes[i1] == unique_major_frames[i])
             #-- number of photons in major frame
-            mf_ph_cnt[i] = len(np.atleast_1d(i2))
+            yapc_window['mf_ph_cnt'][i] = len(np.atleast_1d(i2))
             #-- check if there are photons in major frame
-            if (mf_ph_cnt[i] > 0):
+            if (yapc_window['mf_ph_cnt'][i] > 0):
                 #-- calculate photon event weights
-                pe_weights[i1[i2]],win_x[i],win_h[i] = yapc.classify_photons(
+                pe_weights[i1[i2]],win_x,win_h = yapc.classify_photons(
                     x_atc[i1], h_ph[i1], h_win_width, i2, **kwargs)
                 #-- index of first photon in major frame (1-based)
-                mf_ph_index_beg[i] = np.atleast_1d(i1[i2])[0] + 1
+                yapc_window['ph_index_beg'][i] = np.atleast_1d(i1[i2])[0] + 1
+                #-- selection window sizes
+                yapc_window['win_x'][i] = np.copy(win_x)
+                yapc_window['win_h'][i] = np.copy(win_h)
 
         #-- for each 20m segment
-        snr_norm = np.zeros((n_seg),dtype=np.uint8)
+        yapc_snr_norm = np.zeros((n_seg),dtype=np.uint8)
         for j,_ in enumerate(Segment_ID):
             #-- index for 20m segment j
             idx = Segment_Index_begin[j]
@@ -259,120 +320,117 @@ def append_YAPC_ICESat2_ATL03(ATL03_file, **kwargs):
             #-- verify segment weights
             np.clip(segment_weights, 0, 255, out=segment_weights)
             #-- calculate normalization for 20m segment
-            snr_norm[j] = np.max(segment_weights).astype(np.uint8)
+            yapc_snr_norm[j] = np.max(segment_weights).astype(np.uint8)
             #-- photon event signal-to-noise ratio from photon classifier
-            if (snr_norm[j] > 0):
+            if (yapc_snr_norm[j] > 0):
                 #-- calculate PE signal-to-noise ratio
-                SNR = (100.0*segment_weights)/snr_norm[j]
+                SNR = (100.0*segment_weights)/yapc_snr_norm[j]
                 #-- verify PE SNR values and add to output array
-                photon_snr[idx:idx+cnt] = np.clip(SNR, 0, 100)
+                heights['yapc_snr'][idx:idx+cnt] = np.clip(SNR, 0, 100)
 
         #-- calculate confidence levels from photon classifier
-        pe_sig_conf[photon_snr >= 25] = 2
-        pe_sig_conf[photon_snr >= 60] = 3
-        pe_sig_conf[photon_snr >= 80] = 4
+        heights['yapc_conf'][heights['yapc_snr'] >= 25] = 2
+        heights['yapc_conf'][heights['yapc_snr'] >= 60] = 3
+        heights['yapc_conf'][heights['yapc_snr'] >= 80] = 4
 
         #-- major frame variables
-        fileID[gtx].create_group('yapc_window')
-        fileID[gtx]['yapc_window'].attrs['description'] = ('Dynamic '
+        f_out[gtx].create_group('yapc_window')
+        f_out[gtx]['yapc_window'].attrs['description'] = ('Dynamic '
             'selection window parameters for photon classifier')
-        fileID[gtx]['yapc_window'].attrs['version'] = yapc.version.full_version
+        f_out[gtx]['yapc_window'].attrs['version'] = yapc.version.full_version
         for att_name in ['K','min_ph','min_xspread','min_hspread','aspect']:
-            fileID[gtx]['yapc_window'].attrs[att_name] = kwargs[att_name]
+            f_out[gtx]['yapc_window'].attrs[att_name] = kwargs[att_name]
 
         #-- major frame delta_time
-        val = '{0}/{1}/{2}'.format(gtx,'yapc_window','delta_time')
-        h5 = fileID.create_dataset(val, np.shape(mf_delta_time),
-            data=mf_delta_time, dtype=mf_delta_time.dtype,
-            compression='gzip')
-        #-- make dimension
-        h5.make_scale('delta_time')
-        #-- add HDF5 variable attributes
-        for att_name,att_val in attrs['delta_time'].items():
-            h5.attrs[att_name] = att_val
-
         #-- index of first photon in each major frame
-        val = '{0}/{1}/{2}'.format(gtx,'yapc_window','ph_index_beg')
-        h5 = fileID.create_dataset(val, np.shape(mf_ph_index_beg),
-            data=mf_ph_index_beg, dtype=mf_ph_index_beg.dtype,
-            compression='gzip')
-        #-- attach dimensions
-        for i,dim in enumerate(['delta_time']):
-            h5.dims[i].attach_scale(fileID[gtx]['yapc_window'][dim])
-        #-- add HDF5 variable attributes
-        for att_name,att_val in attrs['ph_index_beg'].items():
-            h5.attrs[att_name] = att_val
-
         #-- number of photons in each major frame
-        val = '{0}/{1}/{2}'.format(gtx,'yapc_window','mf_ph_cnt')
-        h5 = fileID.create_dataset(val, np.shape(mf_ph_cnt),
-            data=mf_ph_cnt, dtype=mf_ph_cnt.dtype, compression='gzip')
-        #-- attach dimensions
-        for i,dim in enumerate(['delta_time']):
-            h5.dims[i].attach_scale(fileID[gtx]['yapc_window'][dim])
-        #-- add HDF5 variable attributes
-        for att_name,att_val in attrs['mf_ph_cnt'].items():
-            h5.attrs[att_name] = att_val
-
         #-- width in meters of the selection window
-        val = '{0}/{1}/{2}'.format(gtx,'yapc_window','win_x')
-        h5 = fileID.create_dataset(val, np.shape(win_x),
-            data=win_x, dtype=win_x.dtype, compression='gzip')
-        #-- attach dimensions
-        for i,dim in enumerate(['delta_time']):
-            h5.dims[i].attach_scale(fileID[gtx]['yapc_window'][dim])
-        #-- add HDF5 variable attributes
-        for att_name,att_val in attrs['win_x'].items():
-            h5.attrs[att_name] = att_val
-
         #-- height in meters of the selection window
-        val = '{0}/{1}/{2}'.format(gtx,'yapc_window','win_h')
-        h5 = fileID.create_dataset(val, np.shape(win_x),
-            data=win_h, dtype=win_h.dtype, compression='gzip')
-        #-- attach dimensions
-        for i,dim in enumerate(['delta_time']):
-            h5.dims[i].attach_scale(fileID[gtx]['yapc_window'][dim])
-        #-- add HDF5 variable attributes
-        for att_name,att_val in attrs['win_h'].items():
-            h5.attrs[att_name] = att_val
+        for key in ['delta_time','ph_index_beg','mf_ph_cnt','win_x','win_h']:
+            val = '{0}/{1}/{2}'.format(gtx,'yapc_window',key)
+            print(val) if kwargs['verbose'] else None
+            h5 = f_out.create_dataset(val, np.shape(yapc_window[key]),
+                data=yapc_window[key], dtype=yapc_window[key].dtype,
+                compression='gzip')
+            #-- create or attach dimensions
+            if (key == 'delta_time'):
+                #-- make dimension
+                h5.make_scale('delta_time')
+            else:
+                #-- attach dimensions
+                for i,dim in enumerate(['delta_time']):
+                    h5.dims[i].attach_scale(f_out[gtx]['yapc_window'][dim])
+            #-- add HDF5 variable attributes
+            for att_name,att_val in attrs[key].items():
+                h5.attrs[att_name] = att_val
 
         #-- segment signal-to-noise ratio normalization from photon classifier
         val = '{0}/{1}/{2}'.format(gtx,'geolocation','yapc_snr_norm')
-        h5 = fileID.create_dataset(val, np.shape(snr_norm), data=snr_norm,
-            dtype=snr_norm.dtype, compression='gzip')
+        print(val) if kwargs['verbose'] else None
+        h5 = f_out.create_dataset(val, np.shape(yapc_snr_norm),
+            data=yapc_snr_norm, dtype=yapc_snr_norm.dtype,
+            compression='gzip')
         #-- attach dimensions
         for i,dim in enumerate(['delta_time']):
-            h5.dims[i].attach_scale(fileID[gtx]['geolocation'][dim])
+            h5.dims[i].attach_scale(f_out[gtx]['geolocation'][dim])
         #-- add HDF5 variable attributes
         for att_name,att_val in attrs['yapc_snr_norm'].items():
             h5.attrs[att_name] = att_val
 
         #-- photon signal-to-noise ratio from photon classifier
-        val = '{0}/{1}/{2}'.format(gtx,'heights','yapc_snr')
-        h5 = fileID.create_dataset(val, np.shape(photon_snr), data=photon_snr,
-            dtype=photon_snr.dtype, compression='gzip')
-        #-- attach dimensions
-        for i,dim in enumerate(['delta_time']):
-            h5.dims[i].attach_scale(fileID[gtx]['heights'][dim])
-        #-- add HDF5 variable attributes
-        for att_name,att_val in attrs['yapc_snr'].items():
-            h5.attrs[att_name] = att_val
+        for key in ['yapc_snr','yapc_conf']:
+            val = '{0}/{1}/{2}'.format(gtx,'heights',key)
+            print(val) if kwargs['verbose'] else None
+            h5 = f_out.create_dataset(val, np.shape(heights[key]),
+                data=heights[key], dtype=heights[key].dtype,
+                compression='gzip')
+            #-- attach dimensions
+            for i,dim in enumerate(['delta_time']):
+                h5.dims[i].attach_scale(f_out[gtx]['heights'][dim])
+            #-- add HDF5 variable attributes
+            for att_name,att_val in attrs[key].items():
+                h5.attrs[att_name] = att_val
 
-        #-- photon signal-to-noise confidence from photon classifier
-        val = '{0}/{1}/{2}'.format(gtx,'heights','yapc_conf')
-        h5 = fileID.create_dataset(val, np.shape(pe_sig_conf), data=pe_sig_conf,
-            dtype=pe_sig_conf.dtype, compression='gzip')
-        #-- attach dimensions
-        for i,dim in enumerate(['delta_time']):
-            h5.dims[i].attach_scale(fileID[gtx]['heights'][dim])
-        #-- add HDF5 variable attributes
-        for att_name,att_val in attrs['yapc_conf'].items():
-            h5.attrs[att_name] = att_val
-
-    #-- close the HDF5 file
-    fileID.close()
+    #-- close the HDF5 files
+    f_in.close()
+    f_out.close()
     #-- change the permissions mode
-    os.chmod(ATL03_file, kwargs['mode'])
+    os.chmod(output_file, kwargs['mode'])
+
+#-- PURPOSE: copy ATL03 variables and attributes to output file
+def copy_ATL03_beam_group(f_in, f_out, gtx):
+    #-- group variables to copy for each beam group
+    groups = {}
+    groups['geolocation'] = ['delta_time','segment_id',
+        'reference_photon_lat','reference_photon_lon']
+    groups['heights'] = ['delta_time','lat_ph','lon_ph']
+    #-- attributes to not copy from input HDF5 file
+    invalid_attributes = ['CLASS','DIMENSION_LIST','NAME','REFERENCE_LIST']
+    #-- create the beam group
+    f_out.create_group(gtx)
+    #-- copy group attributes from input to output
+    for att_name,att_val in f_in[gtx].attrs.items():
+        f_out[gtx].attrs[att_name] = att_val
+    #-- create data groups and copy necessary variables
+    for group,keys in groups.items():
+        f_out[gtx].create_group(group)
+        #-- for each variable to copy from the input file
+        for key in keys:
+            val = '{0}/{1}/{2}'.format(gtx,group,key)
+            h5 = f_out.create_dataset(val, data=f_in[val],
+                dtype=f_in[val].dtype, compression='gzip')
+            #-- create or attach dimensions
+            if (key == 'delta_time'):
+                #-- make dimension
+                h5.make_scale('delta_time')
+            else:
+                #-- attach dimensions
+                for i,dim in enumerate(['delta_time']):
+                    h5.dims[i].attach_scale(f_out[gtx][group][dim])
+            #-- copy group attributes from input to output
+            for att_name,att_val in f_in[val].attrs.items():
+                if att_name not in invalid_attributes:
+                    f_out[val].attrs[att_name] = att_val
 
 #-- Main program that calls append_YAPC_ICESat2_ATL03()
 def main():
@@ -409,8 +467,13 @@ def main():
     #-- algorithm for computing photon event weights
     choices = ('ball_tree','linear','brute')
     parser.add_argument('--method',
-        type=str, default='linear', choices=choices,
+        type=str.lower, default='linear', choices=choices,
         help='Algorithm for computing photon event weights')
+    #-- output file type (appended, copied or reduced)
+    choices = ('append','copy','reduce')
+    parser.add_argument('--output','-O',
+        type=str.lower, default='append', choices=choices,
+        help='Output file type')
     #-- verbosity settings
     parser.add_argument('--verbose','-V',
         default=False, action='store_true',
@@ -430,6 +493,7 @@ def main():
             min_hspread=args.min_h_spread,
             aspect=args.aspect,
             method=args.method,
+            output=args.output,
             verbose=args.verbose,
             mode=args.mode)
 
