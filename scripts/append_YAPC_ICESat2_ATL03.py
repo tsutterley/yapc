@@ -78,41 +78,10 @@ def append_YAPC_ICESat2_ATL03(input_file, **kwargs):
 
     #-- input/output directory
     directory = os.path.dirname(input_file)
-    if (kwargs['output'] == 'append'):
-        #-- Open the HDF5 file for appending
-        f_in = h5py.File(input_file, 'a')
-        #-- copy input filename and file object to output variables
-        output_file = input_file
-        f_out = f_in
-    elif (kwargs['output'] == 'copy'):
-        #-- Copy input file to a new appended ATL03 file
-        fargs=(SUB,PRD,YY,MM,DD,HH,MN,SS,TRK,CYCL,GRAN,RL,VERS,AUX)
-        file_format='{0}{1}_{2}{3}{4}{5}{6}{7}_{8}{9}{10}_{11}_{12}{13}_YAPC.h5'
-        output_file = os.path.join(directory,file_format.format(*fargs))
-        shutil.copyfile(input_file,output_file)
-        #-- Open the HDF5 files for reading and appending
-        f_in = h5py.File(input_file, 'r')
-        f_out = h5py.File(output_file, 'a')
-    elif (kwargs['output'] == 'reduce'):
-        #-- create a new reduced file with only YAPC parameters
-        fargs=(SUB,PRD,YY,MM,DD,HH,MN,SS,TRK,CYCL,GRAN,RL,VERS,AUX)
-        file_format='{0}{1}_YAPC_{2}{3}{4}{5}{6}{7}_{8}{9}{10}_{11}_{12}{13}.h5'
-        output_file = os.path.join(directory,file_format.format(*fargs))
-        #-- Open the HDF5 files for reading and writing
-        f_in = h5py.File(input_file, 'r')
-        f_out = h5py.File(output_file, 'w')
-        #-- copy file-level attributes from input to output
-        for att_name,att_val in f_in.attrs.items():
-            f_out.attrs[att_name] = att_val
-        #-- for each beam group in the input file
-        for gtx in [k for k in f_in.keys() if bool(re.match(r'gt\d[lr]',k))]:
-            #-- create the beam group
-            f_out.create_group(gtx)
-            #-- copy group attributes from input to output
-            for att_name,att_val in f_in[gtx].attrs.items():
-                f_out[gtx].attrs[att_name] = att_val
-    else:
-        raise ValueError("Unlisted output type")
+    #-- Open the input HDF5 file for reading or appending
+    assert kwargs['output'] in ('append','copy','reduce')
+    mode = 'a' if (kwargs['output'] == 'append') else 'r'
+    f_in = h5py.File(input_file, mode=mode)
 
     #-- output information for file
     print('{0} -->'.format(input_file)) if kwargs['verbose'] else None
@@ -213,6 +182,56 @@ def append_YAPC_ICESat2_ATL03(input_file, **kwargs):
             pass
         else:
             IS2_atl03_beams.append(gtx)
+
+    #-- open output file
+    if (kwargs['output'] == 'append'):
+        #-- copy filename and file object for output variables
+        output_file = input_file
+        f_out = f_in
+    elif (kwargs['output'] == 'copy'):
+        #-- Copy input file to a new appended ATL03 file
+        fargs=(SUB,PRD,YY,MM,DD,HH,MN,SS,TRK,CYCL,GRAN,RL,VERS,AUX)
+        file_format='{0}{1}_{2}{3}{4}{5}{6}{7}_{8}{9}{10}_{11}_{12}{13}_YAPC.h5'
+        output_file = os.path.join(directory,file_format.format(*fargs))
+        shutil.copyfile(input_file,output_file)
+        #-- Open the output HDF5 files for appending
+        f_out = h5py.File(output_file, 'a')
+    elif (kwargs['output'] == 'reduce'):
+        #-- create a new reduced file with only YAPC parameters
+        fargs=(SUB,PRD,YY,MM,DD,HH,MN,SS,TRK,CYCL,GRAN,RL,VERS,AUX)
+        file_format='{0}{1}_YAPC_{2}{3}{4}{5}{6}{7}_{8}{9}{10}_{11}_{12}{13}.h5'
+        output_file = os.path.join(directory,file_format.format(*fargs))
+        #-- Open the output HDF5 files for writing
+        f_out = h5py.File(output_file, 'w')
+        #-- copy file-level attributes from input to output
+        for att_name,att_val in f_in.attrs.items():
+            f_out.attrs[att_name] = att_val
+        #-- group variables to copy for each beam group
+        groups = {}
+        groups['geolocation'] = ['delta_time','segment_id',
+            'reference_photon_lat','reference_photon_lon']
+        groups['heights'] = ['delta_time','lat_ph','lon_ph']
+        #-- attributes to not copy from input HDF5 file
+        invalid_attributes = ['CLASS','DIMENSION_LIST','NAME','REFERENCE_LIST']
+        #-- for each valid beam group in the input file
+        for gtx in IS2_atl03_beams:
+            #-- create the beam group
+            f_out.create_group(gtx)
+            #-- copy group attributes from input to output
+            for att_name,att_val in f_in[gtx].attrs.items():
+                f_out[gtx].attrs[att_name] = att_val
+            #-- create data groups and copy necessary variables
+            for group,vars in groups.items():
+                f_out[gtx].create_group(group)
+                #-- for each variable to copy from the input file
+                for var in vars:
+                    val = '{0}/{1}/{2}'.format(gtx,group,var)
+                    f_out.create_dataset(val, data=f_in[val],
+                        dtype=f_in[val].dtype, compression='gzip')
+                    #-- copy group attributes from input to output
+                    for att_name,att_val in f_in[val].attrs.items():
+                        if att_name not in invalid_attributes:
+                            f_out[val].attrs[att_name] = att_val
 
     #-- for each input beam within the file
     for gtx in sorted(IS2_atl03_beams):
