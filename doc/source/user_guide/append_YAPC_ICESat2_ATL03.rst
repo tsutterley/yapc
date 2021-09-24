@@ -37,5 +37,10 @@ Command Line Options
     * ``'ball_tree'``: use scikit.learn.BallTree with custom distance metric
     * ``'linear'``: use a brute-force approach with linear algebra
     * ``'brute'``: use a brute-force approach
+- ``-O X``, ``--output X``: output file type
+
+    * ``'append'``: add photon classification flags to original ATL03 file
+    * ``'copy'``: add photon classification flags to a copied ATL03 file
+    * ``'reduce'``: create a new file with the photon classification flags
 - ``-V``, ``--verbose``: output module information for process
 - ``-M X``, ``--mode X``: permissions mode of output HDF5 datasets
