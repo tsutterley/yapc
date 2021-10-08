@@ -13,3 +13,5 @@ Documentation is available at https:/yapc.readthedocs.io
 import yapc._dist_metrics
 import yapc.version
 from yapc.classify_photons import classify_photons
+# set version
+__version__ = yapc.version.version
