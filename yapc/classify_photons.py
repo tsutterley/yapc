@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 classify_photons.py
-Written by Aimee Gibbons and Tyler Sutterley (09/2021)
+Written by Aimee Gibbons and Tyler Sutterley (10/2021)
 Yet Another Photon Classifier for ATL03 Geolocated Photon Data
 
 PYTHON DEPENDENCIES:
@@ -15,6 +15,7 @@ PYTHON DEPENDENCIES:
         https://github.com/scikit-learn/scikit-learn
 
 UPDATE HISTORY:
+    Updated 10/2021: half the perimeter for weighting the distances
     Updated 09/2021: add option for setting aspect ratio of window
         add option to return selection window dimensions
     Updated 08/2021: update algorithm to match current GSFC version
@@ -169,6 +170,8 @@ def classify_photons(x, h, h_win_width, indices, **kwargs):
     hmin = np.min(h[indices]) - win_h/2.0
     hmax = np.max(h[indices]) + win_h/2.0
     iwin, = np.nonzero((x >= xmin) & (x <= xmax) & (h >= hmin) & (h <= hmax))
+    # normalization for weights
+    dist_norm = (win_x/2.0 + win_h/2.0)
     # method of calculating photon event weights
     if (kwargs['method'] == 'ball_tree'):
         # use BallTree with custom metric to calculate photon event weights
@@ -185,7 +188,7 @@ def classify_photons(x, h, h_win_width, indices, **kwargs):
         # calculate photon event weights and normalize by window size
         valid = np.all(np.isfinite(dist),axis=1)
         inv_dist = np.sum(win_x/2.0 + win_h/2.0 - dist[:,1:],axis=1)
-        pe_weights[valid] = inv_dist[valid]/(win_x*win_h)
+        pe_weights[valid] = inv_dist[valid]/dist_norm
     elif (kwargs['method'] == 'linear'):
         # use brute force with linear algebra to calculate photon event weights
         # window for nearest neighbors
@@ -200,7 +203,7 @@ def classify_photons(x, h, h_win_width, indices, **kwargs):
         inv_dist = win_x/2.0 + win_h/2.0 - dist_sort
         # calculate photon event weights and normalize by window size
         valid = np.all(np.isfinite(dist_sort),axis=1)
-        pe_weights[valid] = np.sum(inv_dist[valid,:],axis=1)/(win_x*win_h)
+        pe_weights[valid] = np.sum(inv_dist[valid,:],axis=1)/dist_norm
     elif (kwargs['method'] == 'brute'):
         # use brute force approach to calculate photon event weights
         # for each photon in the major frame
@@ -220,7 +223,7 @@ def classify_photons(x, h, h_win_width, indices, **kwargs):
             # sort distances and get K nearest neighbors
             k_sort = np.argsort(dx[n] + dh[n])[:K]
             # sum of the K largest weights (normalized by the window size)
-            pe_weights[j] = np.sum(inv_dist[k_sort])/(win_x*win_h)
+            pe_weights[j] = np.sum(inv_dist[k_sort])/dist_norm
     # check if returning both the weights and the window size
     if kwargs['return_window']:
         # return the weights and window size for the major frame
