@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 u"""
-append_YAPC_ICESat2_ATL03.py (09/2021)
+append_YAPC_ICESat2_ATL03.py (10/2021)
 Reads ICESat-2 ATL03 data files and appends photon classification flags
     from YAPC (Yet Another Photon Classifier)
 
@@ -40,6 +40,7 @@ PROGRAM DEPENDENCIES:
     classify_photons.py: Yet Another Photon Classifier for Geolocated Photon Data
 
 UPDATE HISTORY:
+    Updated 10/2021: using python logging for handling verbose output
     Updated 09/2021: added more YAPC options for photon distance classifier
         create YAPC group and output major frame variables to HDF5
         add output options for creating copied or reduced files
@@ -53,6 +54,7 @@ import re
 import h5py
 import yapc
 import shutil
+import logging
 import argparse
 import numpy as np
 
@@ -70,6 +72,10 @@ def append_YAPC_ICESat2_ATL03(input_file, **kwargs):
     kwargs.setdefault('verbose',False)
     kwargs.setdefault('mode',0o775)
 
+    #-- create logger for verbosity level
+    loglevel = logging.INFO if kwargs['verbose'] else logging.CRITICAL
+    logger = yapc.utilities.build_logger('yapc',level=loglevel)
+
     #-- compile regular expression operator for extracting data from ATL03 files
     rx = re.compile(r'(processed_)?(ATL\d+)_(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})'
         r'(\d{2})_(\d{4})(\d{2})(\d{2})_(\d{3})_(\d{2})(.*?).h5$')
@@ -84,7 +90,7 @@ def append_YAPC_ICESat2_ATL03(input_file, **kwargs):
     f_in = h5py.File(input_file, mode=mode)
 
     #-- output information for file
-    print('{0} -->'.format(input_file)) if kwargs['verbose'] else None
+    logger.info('{0} -->'.format(input_file))
 
     #-- attributes for the output variables
     attrs = {}
@@ -213,12 +219,11 @@ def append_YAPC_ICESat2_ATL03(input_file, **kwargs):
             copy_ATL03_beam_group(f_in, f_out, gtx)
 
     #-- print output file if verbose
-    if kwargs['verbose']:
-        print('{0} ({1})'.format(output_file,kwargs['output']))
+    logger.info('{0} ({1})'.format(output_file,kwargs['output']))
 
     #-- for each input beam within the file
     for gtx in sorted(IS2_atl03_beams):
-        print(gtx) if kwargs['verbose'] else None
+        logger.info(gtx)
         #-- ATL03 Segment ID
         Segment_ID = f_in[gtx]['geolocation']['segment_id'][:]
         #-- number of ATL03 20 meter segments
@@ -304,6 +309,9 @@ def append_YAPC_ICESat2_ATL03(input_file, **kwargs):
                 #-- selection window sizes
                 yapc_window['win_x'][i] = np.copy(win_x)
                 yapc_window['win_h'][i] = np.copy(win_h)
+            else:
+                #-- print debug message
+                logger.debug('No photons in major frame {0:d}'.format(i))
 
         #-- for each 20m segment
         yapc_snr_norm = np.zeros((n_seg),dtype=np.uint8)
@@ -348,7 +356,7 @@ def append_YAPC_ICESat2_ATL03(input_file, **kwargs):
         #-- height in meters of the selection window
         for key in ['delta_time','ph_index_beg','mf_ph_cnt','win_x','win_h']:
             val = '{0}/{1}/{2}'.format(gtx,'yapc_window',key)
-            print(val) if kwargs['verbose'] else None
+            logger.info(val)
             h5 = f_out.create_dataset(val, np.shape(yapc_window[key]),
                 data=yapc_window[key], dtype=yapc_window[key].dtype,
                 compression='gzip')
@@ -366,7 +374,7 @@ def append_YAPC_ICESat2_ATL03(input_file, **kwargs):
 
         #-- segment signal-to-noise ratio normalization from photon classifier
         val = '{0}/{1}/{2}'.format(gtx,'geolocation','yapc_snr_norm')
-        print(val) if kwargs['verbose'] else None
+        logger.info(val)
         h5 = f_out.create_dataset(val, np.shape(yapc_snr_norm),
             data=yapc_snr_norm, dtype=yapc_snr_norm.dtype,
             compression='gzip')
@@ -380,7 +388,7 @@ def append_YAPC_ICESat2_ATL03(input_file, **kwargs):
         #-- photon signal-to-noise ratio from photon classifier
         for key in ['yapc_snr','yapc_conf']:
             val = '{0}/{1}/{2}'.format(gtx,'heights',key)
-            print(val) if kwargs['verbose'] else None
+            logger.info(val)
             h5 = f_out.create_dataset(val, np.shape(heights[key]),
                 data=heights[key], dtype=heights[key].dtype,
                 compression='gzip')

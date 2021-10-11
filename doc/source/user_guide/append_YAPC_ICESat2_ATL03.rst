@@ -8,8 +8,8 @@ append_YAPC_ICESat2_ATL03.py
     * ``yapc_snr``: the photon level normalized YAPC signal-to-noise ratio
     * ``yapc_conf``: YAPC-based confidence levels
 
- Calling Sequence
- ================
+Calling Sequence
+================
 
  .. code-block:: bash
 
