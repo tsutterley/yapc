@@ -11,6 +11,7 @@ The package works using Python packages (numpy, scikit-learn)
 Documentation is available at https:/yapc.readthedocs.io
 """
 import yapc._dist_metrics
+import yapc.utilities
 import yapc.version
 from yapc.classify_photons import classify_photons
 # set version
