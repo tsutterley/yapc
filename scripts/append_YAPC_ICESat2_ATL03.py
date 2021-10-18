@@ -41,6 +41,9 @@ PROGRAM DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 10/2021: using python logging for handling verbose output
+        do not use possible TEP photons in YAPC calculation
+        using new YAPC HDF5 variable names to match ASAS version
+        added parsing for converting file lines to arguments
     Updated 09/2021: added more YAPC options for photon distance classifier
         create YAPC group and output major frame variables to HDF5
         add output options for creating copied or reduced files
@@ -53,7 +56,6 @@ import os
 import re
 import h5py
 import yapc
-import shutil
 import logging
 import argparse
 import numpy as np
@@ -143,26 +145,26 @@ def append_YAPC_ICESat2_ATL03(input_file, **kwargs):
     attrs['win_h']['contentType'] = "referenceInformation"
     attrs['win_h']['coordinates'] = "delta_time"
     #-- normalization for photon event weights
-    attrs['yapc_snr_norm'] = {}
-    attrs['yapc_snr_norm']['units'] = 1
-    attrs['yapc_snr_norm']['long_name'] = "Maximum Weight"
-    attrs['yapc_snr_norm']['description'] = ("Maximum weight from the photon "
+    attrs['weight_ph_norm'] = {}
+    attrs['weight_ph_norm']['units'] = 1
+    attrs['weight_ph_norm']['long_name'] = "Maximum Weight"
+    attrs['weight_ph_norm']['description'] = ("Maximum weight from the photon "
         "event classifier used as normalization for calculating the"
         "signal-to-noise ratio")
-    attrs['yapc_snr_norm']['source'] = "YAPC"
-    attrs['yapc_snr_norm']['contentType'] = "qualityInformation"
-    attrs['yapc_snr_norm']['coordinates'] = ("delta_time reference_photon_lat "
+    attrs['weight_ph_norm']['source'] = "YAPC"
+    attrs['weight_ph_norm']['contentType'] = "qualityInformation"
+    attrs['weight_ph_norm']['coordinates'] = ("delta_time reference_photon_lat "
         "reference_photon_lon")
     #-- signal-to-noise ratio for each photon
-    attrs['yapc_snr'] = {}
-    attrs['yapc_snr']['units'] = 100
-    attrs['yapc_snr']['long_name'] = "Signal-to-Noise Ratio"
-    attrs['yapc_snr']['description'] = ("Signal-to-Noise ratio calculated using "
+    attrs['weight_ph'] = {}
+    attrs['weight_ph']['units'] = 100
+    attrs['weight_ph']['long_name'] = "Signal-to-Noise Ratio"
+    attrs['weight_ph']['description'] = ("Signal-to-Noise ratio calculated using "
         "the photon event classifier, normalized using the maximum weight "
         "in an ATL03 segment")
-    attrs['yapc_snr']['source'] = "YAPC"
-    attrs['yapc_snr']['contentType'] = "qualityInformation"
-    attrs['yapc_snr']['coordinates'] = "delta_time lat_ph lon_ph"
+    attrs['weight_ph']['source'] = "YAPC"
+    attrs['weight_ph']['contentType'] = "qualityInformation"
+    attrs['weight_ph']['coordinates'] = "delta_time lat_ph lon_ph"
     #-- photon signal-to-noise confidence from photon classifier
     attrs['yapc_conf'] = {}
     attrs['yapc_conf']['units'] = 1
@@ -201,7 +203,7 @@ def append_YAPC_ICESat2_ATL03(input_file, **kwargs):
         fargs=(SUB,PRD,YY,MM,DD,HH,MN,SS,TRK,CYCL,GRAN,RL,VERS,AUX)
         file_format='{0}{1}_{2}{3}{4}{5}{6}{7}_{8}{9}{10}_{11}_{12}{13}_YAPC.h5'
         output_file = os.path.join(directory,file_format.format(*fargs))
-        shutil.copyfile(input_file,output_file)
+        yapc.utilities.copy(input_file,output_file)
         #-- Open the output HDF5 files for appending
         f_out = h5py.File(output_file, 'a')
     elif (kwargs['output'] == 'reduce'):
@@ -262,13 +264,18 @@ def append_YAPC_ICESat2_ATL03(input_file, **kwargs):
         tlm_height_band1 = f_in[gtx]['bckgrd_atlas']['tlm_height_band1'][:].copy()
         tlm_height_band2 = f_in[gtx]['bckgrd_atlas']['tlm_height_band2'][:].copy()
         delta_time = f_in[gtx]['bckgrd_atlas']['delta_time'][:].copy()
+        #-- flag denoting photon events as possible TEP
+        if (int(RL) < 4):
+            isTEP = np.any((f_in[gtx]['heights']['signal_conf_ph'][:]==-2),axis=1)
+        else:
+            isTEP = (f_in[gtx]['heights']['quality_ph'][:] == 3)
 
         #-- photon event variables
         heights = {}
         #-- photon event weights
         pe_weights = np.zeros((n_pe),dtype=np.float64)
         #-- photon signal-to-noise ratios from classifier
-        heights['yapc_snr'] = np.zeros((n_pe),dtype=np.uint8)
+        heights['weight_ph'] = np.zeros((n_pe),dtype=np.uint8)
         #-- photon confidence levels from classifier
         heights['yapc_conf'] = np.zeros((n_pe),dtype=np.uint8)
 
@@ -293,13 +300,15 @@ def append_YAPC_ICESat2_ATL03(input_file, **kwargs):
             #-- calculate average delta time of major frame
             yapc_window['delta_time'][i] = np.mean(delta_time[idx])
             #-- photon indices for major frame (buffered by 1 on each side)
+            #-- do not use possible TEP photons in photon classification
             i1, = np.nonzero((photon_mframes >= unique_major_frames[i]-1) &
-                (photon_mframes <= unique_major_frames[i]+1))
+                (photon_mframes <= unique_major_frames[i]+1) &
+                np.logical_not(isTEP))
             #-- indices for the major frame within the buffered window
             i2, = np.nonzero(photon_mframes[i1] == unique_major_frames[i])
             #-- number of photons in major frame
             yapc_window['mf_ph_cnt'][i] = len(np.atleast_1d(i2))
-            #-- check if there are photons in major frame
+            #-- check if there are (non-TEP) photons in major frame
             if (yapc_window['mf_ph_cnt'][i] > 0):
                 #-- calculate photon event weights
                 pe_weights[i1[i2]],win_x,win_h = yapc.classify_photons(
@@ -314,7 +323,7 @@ def append_YAPC_ICESat2_ATL03(input_file, **kwargs):
                 logger.debug('No photons in major frame {0:d}'.format(i))
 
         #-- for each 20m segment
-        yapc_snr_norm = np.zeros((n_seg),dtype=np.uint8)
+        weight_ph_norm = np.zeros((n_seg),dtype=np.uint8)
         for j,_ in enumerate(Segment_ID):
             #-- index for 20m segment j
             idx = Segment_Index_begin[j]
@@ -328,18 +337,18 @@ def append_YAPC_ICESat2_ATL03(input_file, **kwargs):
             #-- verify segment weights
             np.clip(segment_weights, 0, 255, out=segment_weights)
             #-- calculate normalization for 20m segment
-            yapc_snr_norm[j] = np.max(segment_weights).astype(np.uint8)
+            weight_ph_norm[j] = np.max(segment_weights).astype(np.uint8)
             #-- photon event signal-to-noise ratio from photon classifier
-            if (yapc_snr_norm[j] > 0):
+            if (weight_ph_norm[j] > 0):
                 #-- calculate PE signal-to-noise ratio
-                SNR = (100.0*segment_weights)/yapc_snr_norm[j]
+                SNR = (100.0*segment_weights)/weight_ph_norm[j]
                 #-- verify PE SNR values and add to output array
-                heights['yapc_snr'][idx:idx+cnt] = np.clip(SNR, 0, 100)
+                heights['weight_ph'][idx:idx+cnt] = np.clip(SNR, 0, 100)
 
         #-- calculate confidence levels from photon classifier
-        heights['yapc_conf'][heights['yapc_snr'] >= 25] = 2
-        heights['yapc_conf'][heights['yapc_snr'] >= 60] = 3
-        heights['yapc_conf'][heights['yapc_snr'] >= 80] = 4
+        heights['yapc_conf'][heights['weight_ph'] >= 25] = 2
+        heights['yapc_conf'][heights['weight_ph'] >= 60] = 3
+        heights['yapc_conf'][heights['weight_ph'] >= 80] = 4
 
         #-- major frame variables
         f_out[gtx].create_group('yapc_window')
@@ -373,20 +382,20 @@ def append_YAPC_ICESat2_ATL03(input_file, **kwargs):
                 h5.attrs[att_name] = att_val
 
         #-- segment signal-to-noise ratio normalization from photon classifier
-        val = '{0}/{1}/{2}'.format(gtx,'geolocation','yapc_snr_norm')
+        val = '{0}/{1}/{2}'.format(gtx,'geolocation','weight_ph_norm')
         logger.info(val)
-        h5 = f_out.create_dataset(val, np.shape(yapc_snr_norm),
-            data=yapc_snr_norm, dtype=yapc_snr_norm.dtype,
+        h5 = f_out.create_dataset(val, np.shape(weight_ph_norm),
+            data=weight_ph_norm, dtype=weight_ph_norm.dtype,
             compression='gzip')
         #-- attach dimensions
         for i,dim in enumerate(['delta_time']):
             h5.dims[i].attach_scale(f_out[gtx]['geolocation'][dim])
         #-- add HDF5 variable attributes
-        for att_name,att_val in attrs['yapc_snr_norm'].items():
+        for att_name,att_val in attrs['weight_ph_norm'].items():
             h5.attrs[att_name] = att_val
 
         #-- photon signal-to-noise ratio from photon classifier
-        for key in ['yapc_snr','yapc_conf']:
+        for key in ['weight_ph','yapc_conf']:
             val = '{0}/{1}/{2}'.format(gtx,'heights',key)
             logger.info(val)
             h5 = f_out.create_dataset(val, np.shape(heights[key]),
@@ -446,8 +455,10 @@ def main():
     parser = argparse.ArgumentParser(
         description="""Reads ICESat-2 ATL03 data files and appends
             photon classification flags from YAPC
-            """
+            """,
+        fromfile_prefix_chars="@"
     )
+    parser.convert_arg_line_to_args = yapc.utilities.convert_arg_line_to_args
     #-- command line parameters
     parser.add_argument('infile',
         type=lambda p: os.path.abspath(os.path.expanduser(p)), nargs='+',

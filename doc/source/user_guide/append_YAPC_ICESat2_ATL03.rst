@@ -4,8 +4,8 @@ append_YAPC_ICESat2_ATL03.py
 
 - Reads ICESat-2 `ATL03 geolocated photon height product files <https://nsidc.org/data/ATL03>`_ and appends photon classification flags from YAPC (*Yet Another Photon Classifier*)
 
-    * ``yapc_snr_norm``: segment level photon weight normalization
-    * ``yapc_snr``: the photon level normalized YAPC signal-to-noise ratio
+    * ``weight_ph_norm``: segment level photon weight normalization
+    * ``weight_ph``: the photon level normalized YAPC signal-to-noise ratio
     * ``yapc_conf``: YAPC-based confidence levels
 
 Calling Sequence
