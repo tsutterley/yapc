@@ -166,11 +166,13 @@ def append_YAPC_ICESat2_ATL03(input_file, **kwargs):
     attrs['weight_ph']['contentType'] = "qualityInformation"
     attrs['weight_ph']['coordinates'] = "delta_time lat_ph lon_ph"
     #-- photon signal-to-noise confidence from photon classifier
+    BACKG,L_CONF,M_CONF,H_CONF = (0.0,25.0,60.0,80.0)
     attrs['yapc_conf'] = {}
     attrs['yapc_conf']['units'] = 1
     attrs['yapc_conf']['valid_min'] = 0
     attrs['yapc_conf']['valid_max'] = 4
     attrs['yapc_conf']['flag_values'] = [0,2,3,4]
+    attrs['yapc_conf']['confidences'] = [BACKG,L_CONF,M_CONF,H_CONF]
     attrs['yapc_conf']['flag_meanings'] = "noise low medium high"
     attrs['yapc_conf']['long_name'] = "Photon Signal Confidence"
     attrs['yapc_conf']['description'] = ("Confidence level associated with "
@@ -284,7 +286,7 @@ def append_YAPC_ICESat2_ATL03(input_file, **kwargs):
         #-- photon signal-to-noise ratios from classifier
         heights['weight_ph'] = np.zeros((n_pe),dtype=np.uint8)
         #-- photon confidence levels from classifier
-        heights['yapc_conf'] = np.zeros((n_pe),dtype=np.uint8)
+        heights['yapc_conf'] = np.zeros((n_pe),dtype=np.int8)
 
         #-- output major frame variables
         yapc_window = {}
@@ -329,6 +331,11 @@ def append_YAPC_ICESat2_ATL03(input_file, **kwargs):
                 #-- print debug message
                 logger.debug('No photons in major frame {0:d}'.format(i))
 
+        #-- photon event weights scaled to a single byte
+        heights['weight_ph'] = 255*pe_weights
+        #-- verify photon event weights
+        np.clip(heights['weight_ph'], 0, 255, out=heights['weight_ph'])
+
         #-- for each 20m segment
         weight_ph_norm = np.zeros((n_seg),dtype=np.uint8)
         for j,_ in enumerate(Segment_ID):
@@ -339,8 +346,8 @@ def append_YAPC_ICESat2_ATL03(input_file, **kwargs):
                 continue
             #-- number of photons in 20m segment
             cnt = Segment_PE_count[j]
-            #-- photon event weights from photon classifier
-            segment_weights = 255*pe_weights[idx:idx+cnt]
+            #-- scaled photon event weights from photon classifier
+            segment_weights = heights['weight_ph'][idx:idx+cnt]
             #-- verify segment weights
             np.clip(segment_weights, 0, 255, out=segment_weights)
             #-- calculate normalization for 20m segment
@@ -348,14 +355,16 @@ def append_YAPC_ICESat2_ATL03(input_file, **kwargs):
             #-- photon event signal-to-noise ratio from photon classifier
             if (weight_ph_norm[j] > 0):
                 #-- calculate PE signal-to-noise ratio
-                SNR = (100.0*segment_weights)/weight_ph_norm[j]
+                scaled_SNR = (100.0*segment_weights)/weight_ph_norm[j]
                 #-- verify PE SNR values and add to output array
-                heights['weight_ph'][idx:idx+cnt] = np.clip(SNR, 0, 100)
-
-        #-- calculate confidence levels from photon classifier
-        heights['yapc_conf'][heights['weight_ph'] >= 25] = 2
-        heights['yapc_conf'][heights['weight_ph'] >= 60] = 3
-        heights['yapc_conf'][heights['weight_ph'] >= 80] = 4
+                np.clip(scaled_SNR, 0, 100, out=scaled_SNR)
+                #-- calculate confidence levels from photon classifier
+                segment_class = np.zeros((cnt),dtype=np.int8)
+                segment_class[scaled_SNR >= L_CONF] = 2
+                segment_class[scaled_SNR >= M_CONF] = 3
+                segment_class[scaled_SNR >= H_CONF] = 4
+                #-- copy segment classification to output heights variable
+                heights['yapc_conf'][idx:idx+cnt] = np.copy(segment_class)
 
         #-- major frame variables
         f_out[gtx].create_group('yapc_window')

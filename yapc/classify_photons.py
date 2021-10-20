@@ -16,6 +16,7 @@ PYTHON DEPENDENCIES:
 
 UPDATE HISTORY:
     Updated 10/2021: half the perimeter for weighting the distances
+        scale weights by the selected number of neighbors (K)
     Updated 09/2021: add option for setting aspect ratio of window
         add option to return selection window dimensions
     Updated 08/2021: update algorithm to match current GSFC version
@@ -171,7 +172,7 @@ def classify_photons(x, h, h_win_width, indices, **kwargs):
     hmax = np.max(h[indices]) + win_h/2.0
     iwin, = np.nonzero((x >= xmin) & (x <= xmax) & (h >= hmin) & (h <= hmax))
     # normalization for weights
-    dist_norm = (win_x/2.0 + win_h/2.0)
+    dist_norm = K*(win_x/2.0 + win_h/2.0)
     # method of calculating photon event weights
     if (kwargs['method'] == 'ball_tree'):
         # use BallTree with custom metric to calculate photon event weights
