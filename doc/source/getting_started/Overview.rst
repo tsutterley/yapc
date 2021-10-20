@@ -52,7 +52,7 @@ For each major frame:
     inv_dist =  win_x/2 - abs(delta(x)) + win_h/2 - abs(delta(h))
 
 - Calculate the weight of each source photon as the sum of the ``k`` largest ``inv_dist`` values
-- Divide the weight by half of the perimeter of the window ``(win_x/2.0 + win_h/2.0)``
+- Normalize weights by dividing by half of the perimeter of the window ``(win_x/2.0 + win_h/2.0)`` and the ``k`` value
 
 For the python version, the distances between photons can be calculated using:
 

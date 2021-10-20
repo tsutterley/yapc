@@ -7,6 +7,9 @@ Management utilities for Yet Another Photon Classifier (YAPC)
 UPDATE HISTORY:
     Written 10/2021
 """
+import os
+import re
+import shutil
 import logging
 
 def build_logger(name, **kwargs):
@@ -42,3 +45,39 @@ def build_logger(name, **kwargs):
         # add handler to logger
         logger.addHandler(handler)
     return logger
+
+# PURPOSE: convert file lines to arguments
+def convert_arg_line_to_args(arg_line):
+    """
+    Convert file lines to arguments
+
+    Arguments
+    ---------
+    arg_line: line string containing a single argument and/or comments
+    """
+    # remove commented lines and after argument comments
+    for arg in re.sub(r'\#(.*?)$',r'',arg_line).split():
+        if not arg.strip():
+            continue
+        yield arg
+
+# PURPOSE: make a copy of a file with all system information
+def copy(source, destination, move=False):
+    """
+    Copy or move a file with all system information
+
+    Arguments
+    ---------
+    source: source file
+    destination: copied destination file
+
+    Keyword arguments
+    -----------------
+    move: remove the source file
+    """
+    source = os.path.abspath(os.path.expanduser(source))
+    destination = os.path.abspath(os.path.expanduser(destination))
+    shutil.copyfile(source, destination)
+    shutil.copystat(source, destination)
+    if move:
+        os.remove(source)

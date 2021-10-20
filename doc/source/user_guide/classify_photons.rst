@@ -29,6 +29,8 @@ Calling Sequence
     y_atc = val['heights']['dist_ph_across'].copy()
     # photon event heights
     h_ph = val['heights']['h_ph'].copy()
+    # flag denoting photon events as possible TEP
+    isTEP = (val[gtx]['heights']['quality_ph'] == 3)
     # for each 20m segment
     for j,_ in enumerate(Segment_ID[gtx]):
         # index for 20m segment j
@@ -56,8 +58,10 @@ Calling Sequence
         # sum of 2 telemetry band widths for major frame
         h_win_width = tlm_height_band1[idx] + tlm_height_band2[idx]
         # photon indices for major frame (buffered by 1 on each side)
+        # do not use possible TEP photons in photon classification
         i1, = np.nonzero((photon_mframes >= unique_major_frames[iteration]-1) &
-            (photon_mframes <= unique_major_frames[iteration]+1))
+            (photon_mframes <= unique_major_frames[iteration]+1) &
+            np.logical_not(isTEP))
         # indices for the major frame within the buffered window
         i2, = np.nonzero(photon_mframes[i1] == unique_major_frames[iteration])
         # calculate photon event weights
