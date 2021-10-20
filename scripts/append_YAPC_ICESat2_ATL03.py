@@ -258,11 +258,18 @@ def append_YAPC_ICESat2_ATL03(input_file, **kwargs):
 
         #-- iterate over ATLAS major frames
         photon_mframes = f_in[gtx]['heights']['pce_mframe_cnt'][:].copy()
+        #-- background ATLAS group variables are based upon 50-shot summations
+        #-- PCE Major Frames are based upon 200-shot summations
         pce_mframe_cnt = f_in[gtx]['bckgrd_atlas']['pce_mframe_cnt'][:].copy()
+        #-- find unique major frames and their indices within background ATLAS group
+        #-- (there will 4 background ATLAS time steps for nearly every major frame)
         unique_major_frames,unique_index = np.unique(pce_mframe_cnt,return_index=True)
+        #-- number of unique major frames in granule for beam
         major_frame_count = len(unique_major_frames)
+        #-- height of each telemetry band for a major frame
         tlm_height_band1 = f_in[gtx]['bckgrd_atlas']['tlm_height_band1'][:].copy()
         tlm_height_band2 = f_in[gtx]['bckgrd_atlas']['tlm_height_band2'][:].copy()
+        #-- delta times of each major frame
         delta_time = f_in[gtx]['bckgrd_atlas']['delta_time'][:].copy()
         #-- flag denoting photon events as possible TEP
         if (int(RL) < 4):
