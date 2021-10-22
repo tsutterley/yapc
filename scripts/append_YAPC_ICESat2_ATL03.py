@@ -44,6 +44,7 @@ UPDATE HISTORY:
         do not use possible TEP photons in YAPC calculation
         using new YAPC HDF5 variable names to match ASAS version
         added parsing for converting file lines to arguments
+        check that given telemetry bands contain at least 1 DEM value
     Updated 09/2021: added more YAPC options for photon distance classifier
         create YAPC group and output major frame variables to HDF5
         add output options for creating copied or reduced files
@@ -246,6 +247,8 @@ def append_YAPC_ICESat2_ATL03(input_file, **kwargs):
         x_atc = f_in[gtx]['heights']['dist_ph_along'][:].copy()
         #-- photon event heights
         h_ph = f_in[gtx]['heights']['h_ph'][:].copy()
+        #-- digital elevation model interpolated to photon events
+        dem_h = np.zeros((n_pe))
         #-- for each 20m segment
         for j,_ in enumerate(Segment_ID):
             #-- index for 20m segment j
@@ -257,6 +260,8 @@ def append_YAPC_ICESat2_ATL03(input_file, **kwargs):
             cnt = Segment_PE_count[j]
             #-- add segment distance to along-track coordinates
             x_atc[idx:idx+cnt] += Segment_Distance[j]
+            #-- interpolate digital elevation model to photon events
+            dem_h[idx:idx+cnt] = f_in[gtx]['geophys_corr']['dem_h'][j]
 
         #-- iterate over ATLAS major frames
         photon_mframes = f_in[gtx]['heights']['pce_mframe_cnt'][:].copy()
@@ -269,8 +274,15 @@ def append_YAPC_ICESat2_ATL03(input_file, **kwargs):
         #-- number of unique major frames in granule for beam
         major_frame_count = len(unique_major_frames)
         #-- height of each telemetry band for a major frame
-        tlm_height_band1 = f_in[gtx]['bckgrd_atlas']['tlm_height_band1'][:].copy()
-        tlm_height_band2 = f_in[gtx]['bckgrd_atlas']['tlm_height_band2'][:].copy()
+        tlm_height = {}
+        tlm_height['band1'] = f_in[gtx]['bckgrd_atlas']['tlm_height_band1'][:].copy()
+        tlm_height['band2'] = f_in[gtx]['bckgrd_atlas']['tlm_height_band2'][:].copy()
+        #-- elevation above ellipsoid of each telemetry band for a major frame
+        tlm_top = {}
+        tlm_top['band1'] = f_in[gtx]['bckgrd_atlas']['tlm_top_band1'][:].copy()
+        tlm_top['band2'] = f_in[gtx]['bckgrd_atlas']['tlm_top_band2'][:].copy()
+        #-- buffer to telemetry band to set as valid
+        tlm_buffer = 100.0
         #-- delta times of each major frame
         delta_time = f_in[gtx]['bckgrd_atlas']['delta_time'][:].copy()
         #-- flag denoting photon events as possible TEP
@@ -304,8 +316,6 @@ def append_YAPC_ICESat2_ATL03(input_file, **kwargs):
         for i in range(major_frame_count):
             #-- background atlas index for iteration
             idx = unique_index[i]
-            #-- sum of 2 telemetry band widths for major frame
-            h_win_width = tlm_height_band1[idx] + tlm_height_band2[idx]
             #-- calculate average delta time of major frame
             yapc_window['delta_time'][i] = np.mean(delta_time[idx])
             #-- photon indices for major frame (buffered by 1 on each side)
@@ -317,8 +327,19 @@ def append_YAPC_ICESat2_ATL03(input_file, **kwargs):
             i2, = np.nonzero(photon_mframes[i1] == unique_major_frames[i])
             #-- number of photons in major frame
             yapc_window['mf_ph_cnt'][i] = len(np.atleast_1d(i2))
+            #-- sum of telemetry band widths for major frame
+            h_win_width = 0.0
+            #-- check that each telemetry band is close to DEM
+            for b in ['band1','band2']:
+                #-- bottom of the telemetry band for major frame
+                tlm_bot_band = tlm_top[b][idx] - tlm_height[b][idx]
+                if np.any((dem_h[i1[i2]] >= (tlm_bot_band-tlm_buffer)) &
+                    (dem_h[i1[i2]] <= (tlm_top[b][idx]+tlm_buffer))):
+                    #-- add telemetry height to window width
+                    h_win_width += tlm_height[b][idx]
             #-- check if there are (non-TEP) photons in major frame
-            if (yapc_window['mf_ph_cnt'][i] > 0):
+            #-- and that the height of the telemetry band is above 0
+            if (yapc_window['mf_ph_cnt'][i] > 0) & (h_win_width > 0.0):
                 #-- calculate photon event weights
                 pe_weights[i1[i2]],win_x,win_h = yapc.classify_photons(
                     x_atc[i1], h_ph[i1], h_win_width, i2, **kwargs)
@@ -332,7 +353,7 @@ def append_YAPC_ICESat2_ATL03(input_file, **kwargs):
                 logger.debug('No photons in major frame {0:d}'.format(i))
 
         #-- photon event weights scaled to a single byte
-        heights['weight_ph'] = 255*pe_weights
+        heights['weight_ph'][:] = 255*pe_weights
         #-- verify photon event weights
         np.clip(heights['weight_ph'], 0, 255, out=heights['weight_ph'])
 

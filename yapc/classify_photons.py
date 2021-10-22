@@ -17,6 +17,7 @@ PYTHON DEPENDENCIES:
 UPDATE HISTORY:
     Updated 10/2021: half the perimeter for weighting the distances
         scale weights by the selected number of neighbors (K)
+        check that the telemetry band height is positive
     Updated 09/2021: add option for setting aspect ratio of window
         add option to return selection window dimensions
     Updated 08/2021: update algorithm to match current GSFC version
@@ -148,7 +149,8 @@ def classify_photons(x, h, h_win_width, indices, **kwargs):
     hspread = np.max(h[indices]) - np.min(h[indices])
     # check that spread widths are greater than criteria
     spread_check = (xspread >= kwargs['min_xspread']) & \
-        (hspread >= kwargs['min_hspread'])
+        (hspread >= kwargs['min_hspread']) & \
+        (h_win_width >= 0.0)
     if np.logical_not(spread_check) and kwargs['return_window']:
         #-- return empty weights and window sizes
         return (pe_weights,0.0,0.0)
