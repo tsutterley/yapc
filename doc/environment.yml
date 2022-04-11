@@ -1,0 +1,23 @@
+name: yapc-docs
+channels:
+  - conda-forge
+dependencies:
+  - cython
+  - docutils<0.18
+  - future
+  - graphviz
+  - h5py
+  - notebook
+  - numpy
+  - numpydoc
+  - pip
+  - python>=3.6
+  - scikit-learn
+  - recommonmark
+  - sphinx
+  - sphinx-markdown-tables
+  - sphinx_rtd_theme
+  - texlive-core
+  - pip:
+    - ..
+

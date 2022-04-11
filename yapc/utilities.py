@@ -16,16 +16,18 @@ def build_logger(name, **kwargs):
     """
     Builds a logging instance with the specified name
 
-    Arguments
-    ---------
-    name: name of the logger
-
-    Keyword arguments
-    -----------------
-    format: event description message format
-    level: lowest-severity log message logger will handle
-    propagate: events logged will be passed to higher level handlers
-    stream: specified stream to initialize StreamHandler
+    Parameters
+    ----------
+    name: str
+        name of the logger
+    format: str
+        event description message format
+    level: int or obj, default logging.CRITICAL
+        lowest-severity log message logger will handle
+    propagate: bool, default False
+        events logged will be passed to higher level handlers
+    stream: obj or NoneType, default None
+        specified stream to initialize StreamHandler
     """
     # set default arguments
     kwargs.setdefault('format', '%(levelname)s:%(name)s:%(message)s')
@@ -51,9 +53,10 @@ def convert_arg_line_to_args(arg_line):
     """
     Convert file lines to arguments
 
-    Arguments
-    ---------
-    arg_line: line string containing a single argument and/or comments
+    Parameters
+    ----------
+    arg_line: str
+        line string containing a single argument and/or comments
     """
     # remove commented lines and after argument comments
     for arg in re.sub(r'\#(.*?)$',r'',arg_line).split():
@@ -68,12 +71,12 @@ def copy(source, destination, move=False):
 
     Arguments
     ---------
-    source: source file
-    destination: copied destination file
-
-    Keyword arguments
-    -----------------
-    move: remove the source file
+    source: str
+        source file
+    destination: str
+        copied destination file
+    move: bool, default False
+        remove the source file
     """
     source = os.path.abspath(os.path.expanduser(source))
     destination = os.path.abspath(os.path.expanduser(destination))
