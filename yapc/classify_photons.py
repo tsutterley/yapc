@@ -65,8 +65,8 @@ def distance_matrix(u, v, p=1, window=[]):
     """
     Calculate distances between two collections of points
 
-    Arguments
-    ---------
+    Parameters
+    ----------
     u: float
         First collection of coordinates
     v: float
@@ -103,8 +103,8 @@ def classify_photons(x, h, h_win_width, indices, **kwargs):
     Use the NASA GSFC YAPC k-nearest neighbors algorithm to determine
     weights for each photon event within an ATL03 major frame
 
-    Arguments
-    ---------
+    Parameters
+    ----------
     x: float
         along-track x coordinates for photon events for 3 major frames
     h: float

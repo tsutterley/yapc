@@ -69,8 +69,8 @@ def copy(source, destination, move=False):
     """
     Copy or move a file with all system information
 
-    Arguments
-    ---------
+    Parameters
+    ----------
     source: str
         source file
     destination: str
