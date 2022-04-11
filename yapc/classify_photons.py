@@ -33,15 +33,16 @@ def windowed_manhattan(u, v, window=[], w=None):
     """
     Create a windowed Manhattan distance metric
 
-    Arguments
-    ---------
-    u: Input array
-    v: Input array for distance
-
-    Keyword arguments
-    -----------------
-    window: distance window for reducing neighbors
-    w: weights for each value
+    Parameters
+    ----------
+    u: float
+        Input array
+    v: float
+        Input array for distance
+    window: float or list, default []
+        distance window for reducing neighbors
+    w: float or NoneType, default None
+        weights for each value
     """
     # verify dimensions
     u = np.atleast_1d(u)
@@ -62,19 +63,21 @@ def windowed_manhattan(u, v, window=[], w=None):
 # PURPOSE: calculate distances between points as matrices
 def distance_matrix(u, v, p=1, window=[]):
     """
-    Calculate distances between points as matrices
+    Calculate distances between two collections of points
 
-    Arguments
-    ---------
-    u: Input array
-    v: Input array for distance
+    Parameters
+    ----------
+    u: float
+        First collection of coordinates
+    v: float
+        Second collection of coordinates
+    p: int, default 1
+        Power for calculating distance
 
-    Keyword arguments
-    -----------------
-    p: power for calculating distance
-        1: Manhattan distances
-        2: Euclidean distances
-    window: distance window for reducing neighbors
+            - ``1``: Manhattan distances
+            - ``2``: Euclidean distances
+    window: float or list, default []
+        Distance window for reducing neighbors
     """
     M,s = np.shape(u)
     N,s = np.shape(v)
@@ -100,25 +103,34 @@ def classify_photons(x, h, h_win_width, indices, **kwargs):
     Use the NASA GSFC YAPC k-nearest neighbors algorithm to determine
     weights for each photon event within an ATL03 major frame
 
-    Arguments
-    ---------
-    x: along-track x coordinates for photon events for 3 major frames
-    h: photon event heights for 3 major frames
-    h_win_width: height of (possibly 2) telemetry bands
-    indices: indices of photon events in ATL03 major frame
+    Parameters
+    ----------
+    x: float
+        along-track x coordinates for photon events for 3 major frames
+    h: float
+        photon event heights for 3 major frames
+    h_win_width: float
+        height of (possibly 2) telemetry bands
+    indices: int
+        indices of photon events in ATL03 major frame
+    K: int, default 3
+        number of values for KNN algorithm
+    min_ph: int, default 3
+        minimum number of photons for a major frame to be valid
+    min_xspread: float, default 1.0
+        minimum along-track spread of photon events
+    min_hspread: float, default 0.01
+        minimum window of heights for photon events
+    aspect: float, default 3.0
+        aspect ratio of x and h window
+    method: str, default 'linear'
+        algorithm for computing photon event weights
 
-    Keyword arguments
-    -----------------
-    K: number of values for KNN algorithm
-    min_ph: minimum number of photons for a major frame to be valid
-    min_xspread: minimum along-track spread of photon events
-    min_hspread: minimum window of heights for photon events
-    aspect: aspect ratio of x and h window
-    method: algorithm for computing photon event weights
-        `'ball_tree'`: use scikit.learn.BallTree with custom distance metric
-        `'linear'`: use a brute-force approach with linear algebra
-        `'brute'`: use a brute-force approach
-    return_window: return the width and height of the selection window
+            - ``'ball_tree'``: use scikit.learn.BallTree with custom distance metric
+            - ``'linear'``: use a brute-force approach with linear algebra
+            - ``'brute'``: use a brute-force approach
+    return_window: bool, default False
+        return the width and height of the selection window
     """
     # set default keyword arguments
     kwargs.setdefault('K',3)

@@ -78,76 +78,8 @@ Calling Sequence
 General Methods
 ===============
 
-.. method:: yapc.classify_photons.classify_photons(x, h, h_win_width, indices, K=3, min_ph=3, min_xspread=1.0, min_hspread=0.01, method='linear', return_window=False)
+.. autofunction:: yapc.classify_photons.classify_photons
 
-    Use the NASA GSFC YAPC k-nearest neighbors algorithm to determine weights for each photon event within an ATL03 major frame
+.. autofunction:: yapc.classify_photons.windowed_manhattan
 
-    Arguments:
-
-        ``x``: along-track x coordinates for photon events for 3 major frames
-
-        ``h``: photon event heights for 3 major frames
-
-        ``h_win_width``: height of (possibly 2) telemetry bands for the central major frame
-
-        ``indices``: indices of photon events in the central major frame
-
-    Keyword arguments:
-
-        ``K``: number of values for KNN algorithm
-
-        ``min_ph``: minimum number of photons for a major frame to be valid
-
-        ``min_xspread``: minimum along-track spread of photon events
-
-        ``min_hspread``: minimum window of heights for photon events
-
-        ``aspect``: aspect ratio of x and h window
-
-        ``method``: algorithm for computing photon event weights
-
-            ``'ball_tree'``: use scikit.learn.BallTree with custom distance metric
-
-            ``'linear'``: use a brute-force approach with linear algebra
-
-            ``'brute'``: use a brute-force approach
-
-        ``return_window``: return the width and height of the selection window
-
-
-.. method:: yapc.classify_photons.windowed_manhattan(u, v, window=[], w=None)
-
-    Create a windowed manhattan distance metric
-
-    Arguments:
-
-        ``u``: Input array
-
-        ``v``: Input array for distance
-
-    Keyword arguments:
-
-        ``window``: distance window for reducing neighbors
-
-        ``w``: weights for each value
-
-
-.. method:: yapc.classify_photons.distance_matrix(u, v, p=1, window=[])
-
-    Calculate distances between points as matrices
-
-    Arguments:
-
-        ``u``: Input array
-
-        ``v``: Input array for distance
-
-    Keyword arguments:
-
-        ``p``: power for calculating distance
-
-            ``1``: Manhattan distances
-
-            ``2``: Euclidean distances
-
-        ``window``: distance window for reducing neighbors
+.. autofunction:: yapc.classify_photons.distance_matrix
