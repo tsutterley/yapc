@@ -322,7 +322,7 @@ def append_YAPC_ICESat2_ATL03(input_file, output='append', verbose=False,
                 #-- verify PE SNR values and add to output array
                 np.clip(scaled_SNR, 0, 100, out=scaled_SNR)
                 #-- calculate confidence levels from photon classifier
-                segment_class = np.zeros((cnt),dtype=np.int8)
+                segment_class = np.zeros_like(scaled_SNR, dtype=np.int8)
                 segment_class[scaled_SNR >= L_CONF] = 2
                 segment_class[scaled_SNR >= M_CONF] = 3
                 segment_class[scaled_SNR >= H_CONF] = 4
