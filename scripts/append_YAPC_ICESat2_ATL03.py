@@ -293,6 +293,9 @@ def append_YAPC_ICESat2_ATL03(input_file, output='append', verbose=False,
             #-- indices of non-TEP photons in central segment
             i2 = np.nonzero((i1 >= idx) & (i1 < (idx+cnt)) &
                 np.logical_not(isTEP[i1]))
+            #-- skip segments that are all TEP photons
+            if not np.any(i2):
+                continue
             #-- add segment distance to along-track coordinates
             distance_along_X = np.copy(x_atc[i1])
             distance_along_X += Segment_Distance[j]
