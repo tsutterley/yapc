@@ -15,7 +15,6 @@ on it surrounding K neighbors and the inverse distances.
 For this prototype product:
 
 - Signal confidence is no longer surface-type specific
-- There is no histogramming or linear fitting of the photon events
 - There is no penalty for sloped surfaces
 
 YAPC Goals
@@ -30,9 +29,9 @@ YAPC Goals
 YAPC Algorithm
 ==============
 
-For each major frame:
+For each segment:
 
-- Calculate ``h_win_width`` as the sum of the (possibly) 2 telemetry band widths
+- Calculate ``h_win_width`` as the spread of heights in a segment
 - Initialize photon weights to 0.0 and perform initial checks
 
   * Number of photons >= ``min_ph``
@@ -40,10 +39,12 @@ For each major frame:
   * Height spread >= ``min_hspread``
 - Calculate the size of a dynamic selection window
 
-  * Calculate ``density`` using the number of photons in the major frame, ``h_win_width`` and the span of the along-track distance
+  * Calculate ``density`` using the number of photons in the segment ``h_win_width`` and the span of the along-track distance
   * From the ``density``, calculate the area necessary to contain at least ``min_ph`` photons
   * Calculate the horizontal (``win_x``) and vertical (``win_h``) window sizes for the ``aspect`` ratio
-- For each source photon in the center major frame, calculate inverse distances from its neighbors
+- OR dynamically calculate the number of neighbors
+  * Calculate ``k`` as half of the square root of the number of photon events
+- For each source photon in the segment, calculate inverse distances from its neighbors
 - Select and count target photons whose along-track distance and height are within ``win_x/2`` and ``win_h/2`` of the source photon
 - Calculate and record the inverse distances for the ``k`` nearest photons
 

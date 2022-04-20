@@ -28,15 +28,25 @@ Command Line Options
 ####################
 
 - ``--K X``, ``-k X``: number of values for KNN algorithm
-- ``--min-ph X``: minimum number of photons for a major frame to be valid
+
+    * Use ``0`` for dynamic selection of neighbors
+- ``--min-ph X``: minimum number of photons for a segment to be valid
 - ``--min-x-spread X``: minimum along-track spread of photon events
 - ``--min-h-spread X``: minimum window of heights for photon events
+- ``--win_x X``: along-track length of window
+- ``--win_h X``: height of window
 - ``--aspect X``: aspect ratio of x and h window
+
+    * Use ``0`` for pre-defined window dimensions
 - ``--method X``: algorithm for computing photon event weights
 
     * ``'ball_tree'``: use scikit.learn.BallTree with custom distance metric
     * ``'linear'``: use a brute-force approach with linear algebra
     * ``'brute'``: use a brute-force approach
+- ``--metric X``: metric for computing distances
+
+    * ``'height'``: height differences
+    * ``'manhattan'``: manhattan distances
 - ``-O X``, ``--output X``: output file type
 
     * ``'append'``: add photon classification flags to original ATL03 file
