@@ -11,16 +11,16 @@ description = ('Python version of the NASA GSFC YAPC '
     '("Yet Another Photon Classifier") Program')
 keywords = 'ICESat-2 laser altimetry, ATLAS, photon classification, kNN filtering'
 # get long_description from README.rst
-with open("README.rst", "r") as fh:
+with open("README.rst", mode="r", encoding="utf8") as fh:
     long_description = fh.read()
 long_description_content_type = "text/x-rst"
 
 # get install requirements
-with open('requirements.txt') as fh:
+with open('requirements.txt', mode="r", encoding="utf8") as fh:
     install_requires = [line.split().pop(0) for line in fh.read().splitlines()]
 
 # get version
-with open('version.txt') as fh:
+with open('version.txt', mode="r", encoding="utf8") as fh:
     version = fh.read()
 
 # list of all scripts to be included with package
