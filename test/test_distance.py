@@ -34,8 +34,9 @@ def test_manhattan_metric():
     tree = sklearn.neighbors.BallTree(np.c_[x,h],
         metric=_dist_metrics.windowed_manhattan,
         window=window, w=w)
-    dist,_ = tree.query(np.c_[x[i],h[i]], k=(K+1), return_distance=True)
-    d1 = np.sort(dist[:,1:K+1])
+    dist,_ = tree.query(np.c_[x[i],h[i]], k=(K+1),
+        return_distance=True)
+    d1 = np.sort(dist[:,1:])
     # method 2: linear
     dist = distance_matrix(np.c_[x,h], np.c_[x[i],h[i]], p=1,
         window=window, w=w)
@@ -74,7 +75,8 @@ def test_height_metric():
     tree = sklearn.neighbors.BallTree(np.c_[x,h],
         metric=_dist_metrics.windowed_manhattan,
         window=window, w=w)
-    dist,_ = tree.query(np.c_[x[i],h[i]], k=(K+1), return_distance=True)
+    dist,_ = tree.query(np.c_[x[i],h[i]], k=(K+2),
+        return_distance=True)
     d1 = np.sort(dist[:,1:K+1])
     # method 2: linear
     dist = distance_matrix(np.c_[x,h], np.c_[x[i],h[i]], p=1,
