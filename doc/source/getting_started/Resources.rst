@@ -10,12 +10,6 @@ Resources
 Software
 ########
 
- - `pointCollection <https://github.com/SmithB/pointCollection>`_: UW-APL utilities for organizing and manipulating point data
- - `surfaceChange <https://github.com/SmithB/surfaceChange>`_: UW-APL scripts for creating tiled dh/dt products from altimetry data
- - `captoolkit <https://github.com/fspaolo/captoolkit>`_: NASA JPL Cryosphere Altimetry Processing Toolkit
- - `icepyx <https://github.com/icesat2py/icepyx>`_: Python tools for obtaining and working with ICESat-2 data
- - `icesat2-viz <https://github.com/abarciauskas-bgse/icesat2-viz>`_: Icesat-2 Visualization Sandbox
- - `pyTMD <https://github.com/tsutterley/pyTMD>`_: Python-based tidal prediction software for ICESat-2 and Operation IceBridge
+ - `SlideRule <https://github.com/ICESat2-SlideRule/sliderule-python>`_: Python client for SlideRule with a YAPC implementation for photon events
  - `read-ICESat-2 <https://github.com/tsutterley/read-ICESat-2>`_: Python tools for obtaining and working with elevation data from the NASA ICESat-2 mission
- - `ATL11 <https://github.com/suzanne64/ATL11>`_: Python code for producing the ICESat-2 Land-Ice Along-Track product (ATL11)
- - `ICESat-2HackWeek <https://github.com/ICESAT-2HackWeek>`_: University of Washington ICESat-2 Hack Week Repositories
+ - `ICESat-2HackWeek <https://github.com/ICESAT-2HackWeek>`_: University of Washington ICESat-2 Hack Week Repositories with tutorials about YAPC and SlideRule

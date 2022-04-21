@@ -7,26 +7,32 @@ on:
   pull_request:
 
 jobs:
-  build-linux:
+  build:
 
-    runs-on: ubuntu-20.04
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        os: [ubuntu-latest, macos-latest]
         python-version: [3.8]
+    env:
+      OS: ${{ matrix.os }}
+      PYTHON: ${{ matrix.python-version }}
+    defaults:
+      run:
+        shell: bash -l {0}
 
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+    - name: Set up conda ${{ matrix.python-version }}
+      uses: conda-incubator/setup-miniconda@v2
       with:
+        auto-update-conda: true
         python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
+        activate-environment: yapc
+        environment-file: environment.yml
+    - name: Create conda Test Environment
       run: |
-        sudo apt-get update
-        pip install --upgrade pip
-        pip install --upgrade setuptools
-        if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
-        pip install .
+        conda install flake8 pytest pytest-cov pytest-runner cython
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
@@ -35,6 +41,7 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
+        pip install --no-deps .
         python3 setup.py pytest --addopts "--verbose --capture=no --cov=./ --cov-report=xml"
     - name: Archive code coverage results
       uses: actions/upload-artifact@v2
@@ -42,36 +49,3 @@ jobs:
         name: code-coverage-report
         path: ./coverage.xml
 
-  build-macos:
-
-    runs-on: macos-latest
-    strategy:
-      matrix:
-        python-version: [3.8]
-
-    steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
-      run: |
-        pip install --upgrade pip
-        pip install --upgrade setuptools
-        if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
-        pip install .
-    - name: Lint with flake8
-      run: |
-        # stop the build if there are Python syntax errors or undefined names
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    - name: Test with pytest
-      run: |
-        python3 setup.py pytest --addopts "--verbose --capture=no --cov=./ --cov-report=xml"
-    - name: Archive code coverage results
-      uses: actions/upload-artifact@v2
-      with:
-        name: code-coverage-report
-        path: ./coverage.xml
