@@ -26,16 +26,18 @@ def test_distance():
     win_x = 4.0
     win_h = 1.0
     window = np.array([win_x/2.0, win_h/2.0])
+    w = np.array([1.0, 1.0])
     # number of neighbors
     K = 5
 
     # method 1: ball_tree
     tree = sklearn.neighbors.BallTree(np.c_[x,h],
-        metric=_dist_metrics.windowed_manhattan, window=window)
+        metric=_dist_metrics.windowed_manhattan, window=window, w=w)
     dist,_ = tree.query(np.c_[x[i],h[i]], k=(K+1), return_distance=True)
     d1 = np.sort(dist[:,1:])
     # method 2: linear
-    dist = distance_matrix(np.c_[x,h], np.c_[x[i],h[i]], p=1, window=window)
+    dist = distance_matrix(np.c_[x,h], np.c_[x[i],h[i]], p=1,
+        window=window, w=w)
     d2 = np.sort(dist, axis=0)[1:K+1].T
     # method 3: brute
     # all photon events in buffer excluding source photon
