@@ -13,9 +13,8 @@ dependencies:
   - pip
   - python>=3.6
   - scikit-learn
-  - recommonmark
   - sphinx
-  - sphinx-markdown-tables
+  - sphinx-argparse
   - sphinx_rtd_theme
   - texlive-core
   - pip:
