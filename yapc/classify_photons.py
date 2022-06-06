@@ -178,16 +178,16 @@ def classify_photons(x, h, h_win_width, indices, **kwargs):
     # number of points but be greater than or equal to k
     min_ph_check = (n_pe >= kwargs['min_ph']) & (n_pe >= (K+1))
     if np.logical_not(min_ph_check) and kwargs['return_window'] and kwargs['return_K']:
-        #-- return empty weights, window sizes and selection window
+        # return empty weights, window sizes and selection window
         return (pe_weights, 0.0, 0.0, K)
     if np.logical_not(min_ph_check) and kwargs['return_window']:
-        #-- return empty weights and window sizes
+        # return empty weights and window sizes
         return (pe_weights, 0.0, 0.0)
     if np.logical_not(min_ph_check) and kwargs['return_K']:
-        #-- return empty weights and selection window
+        # return empty weights and selection window
         return (pe_weights, K)
     elif np.logical_not(min_ph_check):
-        #-- return empty weights
+        # return empty weights
         return pe_weights
     # along-track spread of photon events
     xspread = np.max(x[indices]) - np.min(x[indices])
@@ -198,16 +198,16 @@ def classify_photons(x, h, h_win_width, indices, **kwargs):
         (hspread >= kwargs['min_hspread']) & \
         (h_win_width >= 0.0)
     if np.logical_not(spread_check) and kwargs['return_window'] and kwargs['return_K']:
-        #-- return empty weights, window sizes and selection window
+        # return empty weights, window sizes and selection window
         return (pe_weights, 0.0, 0.0, K)
     if np.logical_not(spread_check) and kwargs['return_window']:
-        #-- return empty weights and window sizes
+        # return empty weights and window sizes
         return (pe_weights, 0.0, 0.0)
     if np.logical_not(spread_check) and kwargs['return_K']:
-        #-- return empty weights and selection window
+        # return empty weights and selection window
         return (pe_weights, K)
     elif np.logical_not(spread_check):
-        #-- return empty weights
+        # return empty weights
         return pe_weights
     # use pre-defined window size or adaptive window size
     if (kwargs['aspect'] > 0.0):

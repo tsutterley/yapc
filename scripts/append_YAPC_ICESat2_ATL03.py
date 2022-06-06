@@ -353,7 +353,9 @@ def append_YAPC_ICESat2_ATL03(input_file, output='append', verbose=False,
             # skip segments that are all TEP photons
             if not np.any(i2):
                 continue
-
+            # skip segments where the maximum weight is zero
+            if (weight_ph_norm[j] == 0):
+                continue
             # scaled photon event weights from photon classifier
             segment_weights = 255.0*(pe_weights[i1[i2]]/weight_ph_norm[j])
             # verify segment weights and copy to output
