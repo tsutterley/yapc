@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 classify_photons.py
-Written by Aimee Gibbons and Tyler Sutterley (04/2022)
+Written by Aimee Gibbons and Tyler Sutterley (06/2022)
 Yet Another Photon Classifier for ATL03 Geolocated Photon Data
 
 PYTHON DEPENDENCIES:
@@ -15,6 +15,7 @@ PYTHON DEPENDENCIES:
         https://github.com/scikit-learn/scikit-learn
 
 UPDATE HISTORY:
+    Updated 06/2022: added option for setting the minimum KNN value
     Updated 04/2022: can weight using only height differences
     Updated 10/2021: half the perimeter for weighting the distances
         scale weights by the selected number of neighbors (K)
@@ -121,6 +122,8 @@ def classify_photons(x, h, h_win_width, indices, **kwargs):
         indices of photon events to classify
     K: int, default 0
         number of values for KNN algorithm
+    min_knn: int, default 5
+        minimum number of values for KNN algorithm
     min_ph: int, default 3
         minimum number of photons to be valid
     min_xspread: float, default 1.0
@@ -129,7 +132,7 @@ def classify_photons(x, h, h_win_width, indices, **kwargs):
         minimum window of heights for photon events
     win_x: float, default 15.0
         along-track length of window
-    win_h: float, default 3.0
+    win_h: float, default 6.0
         height of window
     aspect: float, default 0.0
         aspect ratio of x and h window
@@ -151,11 +154,12 @@ def classify_photons(x, h, h_win_width, indices, **kwargs):
     """
     # set default keyword arguments
     kwargs.setdefault('K', 0)
+    kwargs.setdefault('min_knn', 5)
     kwargs.setdefault('min_ph', 3)
     kwargs.setdefault('min_xspread', 1.0)
     kwargs.setdefault('min_hspread', 0.01)
     kwargs.setdefault('win_x', 15.0)
-    kwargs.setdefault('win_h', 3.0)
+    kwargs.setdefault('win_h', 6.0)
     kwargs.setdefault('aspect', 0.0)
     kwargs.setdefault('method', 'linear')
     kwargs.setdefault('metric', 'height')
@@ -167,7 +171,7 @@ def classify_photons(x, h, h_win_width, indices, **kwargs):
     pe_weights = np.zeros((n_pe))
     # number of values for KNN algorithm
     if (kwargs['K'] == 0):
-        K = np.max([1, np.sqrt(n_pe)/2]).astype(int)
+        K = np.max([kwargs['min_knn'], np.sqrt(n_pe)/2]).astype(int)
     else:
         K = np.copy(kwargs['K'])
     # check that number of photons is greater than criteria

@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 u"""
-append_YAPC_ICESat2_ATL03.py (05/2022)
+append_YAPC_ICESat2_ATL03.py
+Written by Aimee Gibbons and Tyler Sutterley (06/2022)
 Reads ICESat-2 ATL03 data files and appends photon classification flags
-    from YAPC (Yet Another Photon Classifier)
+    from YAPC (Yet Another Photon Classifier) to granules
 
 CALLING SEQUENCE:
     python append_YAPC_ICESat2_ATL03.py ATL03_file
@@ -10,6 +11,7 @@ CALLING SEQUENCE:
 COMMAND LINE OPTIONS:
     --K X, -k X: number of values for KNN algorithm
         Use 0 for dynamic selection of neighbors
+    --min-knn: Minimum value of K used in the KNN algorithm
     --min-ph X: minimum number of photons for a segment to be valid
     --min-x-spread X: minimum along-track spread of photon events
     --min-h-spread X: minimum window of heights for photon events
@@ -47,6 +49,8 @@ PROGRAM DEPENDENCIES:
     classify_photons.py: Yet Another Photon Classifier for Geolocated Photon Data
 
 UPDATE HISTORY:
+    Updated 06/2022: can normalize weights over entire ATL03 granule
+        added option for setting the minimum KNN value
     Updated 05/2022: use argparse descriptions within sphinx documentation
     Updated 04/2022: calculate weights for each ATL03 segment
     Updated 10/2021: using python logging for handling verbose output
@@ -89,14 +93,16 @@ def append_YAPC_ICESat2_ATL03(input_file, output='append', verbose=False,
     mode=0o775, **kwargs):
     # set default keyword arguments for photon classification
     kwargs.setdefault('K',0)
+    kwargs.setdefault('min_knn', 5)
     kwargs.setdefault('min_ph', 3)
     kwargs.setdefault('min_xspread', 1.0)
     kwargs.setdefault('min_hspread', 0.01)
     kwargs.setdefault('win_x', 15.0)
-    kwargs.setdefault('win_h', 3.0)
+    kwargs.setdefault('win_h', 6.0)
     kwargs.setdefault('aspect', 0.0)
     kwargs.setdefault('method', 'linear')
     kwargs.setdefault('metric', 'height')
+    kwargs.setdefault('norm', 'segment')
     kwargs.setdefault('return_window', True)
     kwargs.setdefault('return_K', True)
 
@@ -152,6 +158,7 @@ def append_YAPC_ICESat2_ATL03(input_file, output='append', verbose=False,
     attrs['K']['long_name'] = "K"
     attrs['K']['description'] = "Dynamically selected number of neighbors"
     attrs['K']['source'] = "YAPC"
+    attrs['K']['valid_min'] = kwargs['min_knn']
     attrs['K']['contentType'] = "referenceInformation"
     attrs['K']['coordinates'] = "delta_time"
     # normalization for photon event weights
@@ -162,6 +169,7 @@ def append_YAPC_ICESat2_ATL03(input_file, output='append', verbose=False,
         "event classifier used as normalization for calculating the"
         "signal-to-noise ratio")
     attrs['weight_ph_norm']['source'] = "YAPC"
+    attrs['weight_ph_norm']['normalization'] = kwargs['norm']
     attrs['weight_ph_norm']['contentType'] = "qualityInformation"
     attrs['weight_ph_norm']['coordinates'] = ("delta_time reference_photon_lat "
         "reference_photon_lon")
@@ -173,6 +181,7 @@ def append_YAPC_ICESat2_ATL03(input_file, output='append', verbose=False,
         "the photon event classifier, normalized using the maximum weight "
         "in an ATL03 segment")
     attrs['weight_ph']['source'] = "YAPC"
+    attrs['weight_ph']['normalization'] = kwargs['norm']
     attrs['weight_ph']['contentType'] = "qualityInformation"
     attrs['weight_ph']['coordinates'] = "delta_time lat_ph lon_ph"
     # photon signal-to-noise confidence from photon classifier
@@ -189,6 +198,7 @@ def append_YAPC_ICESat2_ATL03(input_file, output='append', verbose=False,
         "each photon event selected as signal from the photon classifier "
         "(0=noise; 2=low; 3=med; 4=high).")
     attrs['yapc_conf']['source'] = "YAPC"
+    attrs['yapc_conf']['normalization'] = kwargs['norm']
     attrs['yapc_conf']['contentType'] = "qualityInformation"
     attrs['yapc_conf']['coordinates'] = "delta_time lat_ph lon_ph"
 
@@ -261,6 +271,9 @@ def append_YAPC_ICESat2_ATL03(input_file, output='append', verbose=False,
         else:
             isTEP = (f_in[gtx]['heights']['quality_ph'][:] == 3)
 
+        # photon event weights and normalization
+        pe_weights = np.zeros((n_pe))
+        weight_ph_norm = np.zeros((n_seg))
         # photon event variables
         heights = {}
         # photon signal-to-noise ratios from classifier
@@ -276,8 +289,9 @@ def append_YAPC_ICESat2_ATL03(input_file, output='append', verbose=False,
         yapc_window['win_h'] = np.zeros((n_seg))
         # dynamic number of values in KNN algorithm
         yapc_window['K'] = np.zeros((n_seg))
-        # for each 20m segment
+        # photon weight normalization scaled to byte
         yapc_window['weight_ph_norm'] = np.zeros((n_seg),dtype=np.uint8)
+        # calculate weights for each 20m segment
         for j,_ in enumerate(Segment_ID):
             # index for 20m segment j
             idx = Segment_Index_begin[j]
@@ -304,25 +318,53 @@ def append_YAPC_ICESat2_ATL03(input_file, output='append', verbose=False,
             h_win_width = np.max([1., h_extent(h_ph[i1])])
             yapc_window['h_win_width'][j] = h_win_width.astype(np.int64)
             # photon event weights
-            pe_weights, win_x, win_h, K = yapc.classify_photons(
+            pe_weights[i1[i2]], win_x, win_h, K = yapc.classify_photons(
                 distance_along_X, h_ph[i1], h_win_width, i2, **kwargs)
             # selection window sizes (can be dynamically calculated)
             yapc_window['win_x'][j] = np.copy(win_x)
             yapc_window['win_h'][j] = np.copy(win_h)
             # dynamically selected number of neighbors
             yapc_window['K'][j] = np.copy(K)
+            # normalize photon weights for each segment
+            if (kwargs['norm'] == 'segment'):
+                weight_ph_norm[j] = np.max(pe_weights[i1[i2]])
+
+        # normalize photon weights over complete granule
+        if (kwargs['norm'] == 'granule'):
+            weight_ph_norm[:] = np.max(pe_weights)
+
+        # calculated scaled weights for each 20m segment
+        for j,_ in enumerate(Segment_ID):
+            # index for 20m segment j
+            idx = Segment_Index_begin[j]
+            # skip segments with no photon events
+            if (idx < 0):
+                continue
+            # number of photons in 20m segment
+            cnt = Segment_PE_count[j]
+            # buffer photons with previous and following segments
+            cnt_m1 = 0 if (j == 0) else Segment_PE_count[j-1]
+            cnt_p1 = 0 if (j == (n_seg-1)) else Segment_PE_count[j+1]
+            # photon indices for segment (buffered by 1 on each side)
+            i1 = np.arange(idx-cnt_m1, idx+cnt+cnt_p1, 1)
+            # indices of non-TEP photons in central segment
+            i2 = np.nonzero((i1 >= idx) & (i1 < (idx+cnt)) &
+                np.logical_not(isTEP[i1]))
+            # skip segments that are all TEP photons
+            if not np.any(i2):
+                continue
+
             # scaled photon event weights from photon classifier
-            segment_weights = 255.0*pe_weights
+            segment_weights = 255.0*(pe_weights[i1[i2]]/weight_ph_norm[j])
             # verify segment weights and copy to output
             np.clip(segment_weights, 0, 255, out=segment_weights)
             heights['weight_ph'][i1[i2]] = segment_weights.astype(np.uint8)
             # calculate normalization for 20m segment
-            weight_ph_norm = np.max(segment_weights)
-            yapc_window['weight_ph_norm'][j] = weight_ph_norm.astype(np.uint8)
+            yapc_window['weight_ph_norm'][j] = weight_ph_norm[j].astype(np.uint8)
             # photon event signal-to-noise ratio from photon classifier
-            if (weight_ph_norm > 0):
+            if (weight_ph_norm[j] > 0):
                 # calculate PE signal-to-noise ratio
-                scaled_SNR = (100.0*segment_weights)/weight_ph_norm
+                scaled_SNR = (100.0*segment_weights)/weight_ph_norm[j]
                 # verify PE SNR values and add to output array
                 np.clip(scaled_SNR, 0, 100, out=scaled_SNR)
                 # calculate confidence levels from photon classifier
@@ -426,6 +468,10 @@ def arguments():
     parser.add_argument('--K','-k',
         type=int, default=0,
         help='Number of values for KNN algorithm')
+    # minimum value of K for KNN algorithm
+    parser.add_argument('--min-knn',
+        type=int, default=5,
+        help='Minimum value of K used in the KNN algorithm')
     # minimum number of photons for a segment
     parser.add_argument('--min-ph',
         type=int, default=3,
@@ -443,7 +489,7 @@ def arguments():
         type=float, default=15.0,
         help='Along-track length of window')
     parser.add_argument('--win-h',
-        type=float, default=3.0,
+        type=float, default=6.0,
         help='Height of window')
     # aspect ratio of x and h window
     parser.add_argument('--aspect',
@@ -459,6 +505,11 @@ def arguments():
     parser.add_argument('--metric',
         type=str.lower, default='height', choices=choices,
         help='Metric for computing distances')
+    # normalization scheme for weights (segment level or granule)
+    choices = ('segment','granule')
+    parser.add_argument('--norm',
+        type=str.lower, default='segment', choices=choices,
+        help='Normalization scheme for weights')
     # output file type (appended, copied or reduced)
     choices = ('append','copy','reduce')
     parser.add_argument('--output','-O',
@@ -485,6 +536,7 @@ def main():
     for ATL03_file in args.infile:
         append_YAPC_ICESat2_ATL03(ATL03_file,
             K=args.K,
+            min_knn=args.min_knn,
             min_ph=args.min_ph,
             min_xspread=args.min_x_spread,
             min_hspread=args.min_h_spread,
@@ -493,6 +545,7 @@ def main():
             aspect=args.aspect,
             method=args.method,
             metric=args.metric,
+            norm=args.norm,
             output=args.output,
             verbose=args.verbose,
             mode=args.mode)

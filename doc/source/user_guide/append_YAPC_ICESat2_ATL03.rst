@@ -2,11 +2,11 @@
 append_YAPC_ICESat2_ATL03.py
 ============================
 
-- Reads ICESat-2 `ATL03 geolocated photon height product files <https://nsidc.org/data/ATL03>`_ and appends photon classification flags from YAPC (*Yet Another Photon Classifier*)
+- Reads ICESat-2 `ATL03 geolocated photon height product files <https://nsidc.org/data/ATL03>`_ and appends photon classification flags from YAPC (*Yet Another Photon Classifier*) to granules
 
-    * ``weight_ph_norm``: segment level photon weight normalization
-    * ``weight_ph``: the photon level normalized YAPC signal-to-noise ratio
-    * ``yapc_conf``: YAPC-based confidence levels
+    * ``weight_ph_norm``: photon weight normalization
+    * ``weight_ph``: normalized YAPC signal-to-noise ratio for each photon event
+    * ``yapc_conf``: YAPC-based confidence levels for each photon event
 
 `Source code`__
 
@@ -36,6 +36,10 @@ Calling Sequence
     --metric : @after
         * ``'height'``: height differences
         * ``'manhattan'``: manhattan distances
+
+    --norm : @after
+        * ``'segment'``: normalize photon weights for each segment
+        * ``'granule'``: normalize photon weights over complete granule
 
     --output -O : @after
         * ``'append'``: add photon classification flags to original ATL03 file
