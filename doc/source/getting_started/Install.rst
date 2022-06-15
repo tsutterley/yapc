@@ -2,8 +2,8 @@
 Setup and Installation
 ======================
 
-Presently ``yapc`` is only available for use as a
-`GitHub repository <https://github.com/tsutterley/yapc>`_.
+``yapc`` is available for download from the `GitHub repository <https://github.com/tsutterley/yapc>`_,
+and the `Python Package Index (pypi) <https://pypi.org/project/pyYAPC/>`_,
 The contents of the repository can be download as a
 `zipped file <https://github.com/tsutterley/yapc/archive/main.zip>`_  or cloned.
 To use this repository, please fork into your own account and then clone onto your system.

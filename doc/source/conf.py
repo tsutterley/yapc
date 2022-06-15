@@ -18,7 +18,7 @@ import datetime
 
 # -- Project information -----------------------------------------------------
 
-project = 'yapc'
+project = 'pyYAPC'
 year = datetime.date.today().year
 copyright = f"2021\u2013{year}, Tyler C. Sutterley"
 author = 'Aimee Gibbons and Tyler Sutterley'
