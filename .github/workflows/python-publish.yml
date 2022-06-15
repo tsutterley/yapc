@@ -20,8 +20,10 @@ jobs:
         python-version: '3.x'
     - name: Install dependencies
       run: |
+        sudo apt-get update
+        sudo apt-get install gcc
         python -m pip install --upgrade pip
-        pip install setuptools twine cython
+        pip install setuptools build twine cython
     - name: Build and publish
       env:
         TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
@@ -29,4 +31,3 @@ jobs:
       run: |
         python3 -m build
         twine upload dist/*.tar.gz
-
