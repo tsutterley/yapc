@@ -4,7 +4,9 @@ YAPC
 
 |Language|
 |License|
+|PyPI Version|
 |Documentation Status|
+|zenodo|
 
 .. |Language| image:: https://img.shields.io/badge/python-v3.8-green.svg
    :target: https://www.python.org  /
@@ -17,6 +19,9 @@ YAPC
 
 .. |Documentation Status| image:: https://readthedocs.org/projects/yapc/badge/?version=latest
    :target: https://yapc.readthedocs.io/en/latest/?badge=latest
+
+.. |zenodo| image:: https://zenodo.org/badge/364694368.svg
+   :target: https://zenodo.org/badge/latestdoi/364694368
 
 Python version of the NASA Goddard Space Flight Center YAPC (*"Yet Another Photon Classifier"*) Program.
 YAPC is a prototype photon classifer for the NASA ICESat-2 ATL03 Global Geolocated Photon product.
