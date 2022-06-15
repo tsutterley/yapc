@@ -12,6 +12,9 @@ YAPC
 .. |License| image:: https://img.shields.io/github/license/tsutterley/yapc
    :target: https://github.com/tsutterley/yapc/blob/main/LICENSE
 
+.. |PyPI Version| image:: https://img.shields.io/pypi/v/pyYAPC.svg
+   :target: https://pypi.python.org/pypi/pyYAPC/
+
 .. |Documentation Status| image:: https://readthedocs.org/projects/yapc/badge/?version=latest
    :target: https://yapc.readthedocs.io/en/latest/?badge=latest
 
