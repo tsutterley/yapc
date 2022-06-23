@@ -15,8 +15,9 @@ COMMAND LINE OPTIONS:
     --min-ph X: minimum number of photons for a segment to be valid
     --min-x-spread X: minimum along-track spread of photon events
     --min-h-spread X: minimum window of heights for photon events
-    --win_x X: along-track length of window
-    --win_h X: height of window
+    --win-x X: along-track length of window
+    --win-h X: height of window
+        Use 0 for dynamic window height
     --aspect X: aspect ratio of x and h window
         Use 0 for pre-defined window dimensions
     --method X: algorithm for computing photon event weights
@@ -51,6 +52,7 @@ PROGRAM DEPENDENCIES:
 UPDATE HISTORY:
     Updated 06/2022: can normalize weights over entire ATL03 granule
         added option for setting the minimum KNN value
+        can use a dynamic window height by setting win_h to 0
     Updated 05/2022: use argparse descriptions within sphinx documentation
     Updated 04/2022: calculate weights for each ATL03 segment
     Updated 10/2021: using python logging for handling verbose output
@@ -76,16 +78,26 @@ import numpy as np
 
 # PURPOSE: finds the vertical extent of the photons
 def h_extent(h_ph):
-  """Find the vertical extent of the photons
-  """
-  # Calculate bin edges needed for 1 meter bins
-  n_bins = np.ceil(np.ptp(h_ph))
-  if (n_bins <= 0):
-      return 0
-  #  construct a histogram
-  hist,_ = np.histogram(h_ph, bins=int(n_bins))
-  # Return the number of nonzero bins.
-  return np.count_nonzero(hist)
+    """
+    Find the vertical extent of the photons
+
+    Parameters
+    ----------
+    h_ph: float
+        Photon event heights
+
+    Returns
+    -------
+    The number of valid bins within a histogram
+    """
+    # Calculate bin edges needed for 1 meter bins
+    n_bins = np.ceil(np.ptp(h_ph))
+    if (n_bins <= 0):
+        return 0
+    #  construct a histogram
+    hist,_ = np.histogram(h_ph, bins=int(n_bins))
+    # Return the number of nonzero bins.
+    return np.count_nonzero(hist)
 
 # PURPOSE: reads ICESat-2 ATL03 HDF5 files
 # computes photon classifications heights over 20m segments
@@ -98,7 +110,7 @@ def append_YAPC_ICESat2_ATL03(input_file, output='append', verbose=False,
     kwargs.setdefault('min_xspread', 1.0)
     kwargs.setdefault('min_hspread', 0.01)
     kwargs.setdefault('win_x', 15.0)
-    kwargs.setdefault('win_h', 6.0)
+    kwargs.setdefault('win_h', 0.0)
     kwargs.setdefault('aspect', 0.0)
     kwargs.setdefault('method', 'linear')
     kwargs.setdefault('metric', 'height')
@@ -491,7 +503,7 @@ def arguments():
         type=float, default=15.0,
         help='Along-track length of window')
     parser.add_argument('--win-h',
-        type=float, default=6.0,
+        type=float, default=0.0,
         help='Height of window')
     # aspect ratio of x and h window
     parser.add_argument('--aspect',

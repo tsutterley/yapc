@@ -28,6 +28,9 @@ Calling Sequence
     --aspect : @after
         * Use ``0`` for pre-defined window dimensions
 
+    --win-h : @after
+        * Use ``0`` for dynamic window height
+
     --method : @after
         * ``'ball_tree'``: use ``scikit.learn.BallTree`` with custom distance metric
         * ``'linear'``: use a brute-force approach with linear algebra
