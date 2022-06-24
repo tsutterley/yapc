@@ -123,7 +123,8 @@ def classify_photons(x, h, h_win_width, indices, **kwargs):
         indices of photon events to classify
     K: int, default 0
         number of values for KNN algorithm
-        Use 0 for dynamic selection of neighbors
+
+            - Set to 0 for dynamic selection of neighbors
     min_knn: int, default 5
         minimum number of values for KNN algorithm
     min_ph: int, default 3
@@ -136,10 +137,12 @@ def classify_photons(x, h, h_win_width, indices, **kwargs):
         along-track length of window
     win_h: float, default 6.0
         height of window
-        Use 0 for dynamic window height
+
+            - Set to 0 for dynamic window height
     aspect: float, default 0.0
         aspect ratio of x and h window
-        Use 0 for pre-defined window dimensions
+
+            - Set to 0 for pre-defined window dimensions
     method: str, default 'linear'
         algorithm for computing photon event weights
 
@@ -163,7 +166,7 @@ def classify_photons(x, h, h_win_width, indices, **kwargs):
     kwargs.setdefault('min_xspread', 1.0)
     kwargs.setdefault('min_hspread', 0.01)
     kwargs.setdefault('win_x', 15.0)
-    kwargs.setdefault('win_h', 0.0)
+    kwargs.setdefault('win_h', 6.0)
     kwargs.setdefault('aspect', 0.0)
     kwargs.setdefault('method', 'linear')
     kwargs.setdefault('metric', 'height')

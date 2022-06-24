@@ -503,7 +503,7 @@ def arguments():
         type=float, default=15.0,
         help='Along-track length of window')
     parser.add_argument('--win-h',
-        type=float, default=0.0,
+        type=float, default=6.0,
         help='Height of window')
     # aspect ratio of x and h window
     parser.add_argument('--aspect',
