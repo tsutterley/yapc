@@ -1,7 +1,6 @@
 prune .github*
 prune test*
 exclude *.sh
-exclude *.cfg
 exclude *.yml
 include README.rst
 include LICENSE
