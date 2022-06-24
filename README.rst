@@ -8,7 +8,7 @@ YAPC
 |Documentation Status|
 |zenodo|
 
-.. |Language| image:: https://img.shields.io/badge/python-v3.8-green.svg
+.. |Language| image:: https://img.shields.io/pypi/pyversions/yapc?color=green
    :target: https://www.python.org  /
 
 .. |License| image:: https://img.shields.io/github/license/tsutterley/yapc
