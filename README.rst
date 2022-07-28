@@ -9,7 +9,7 @@ YAPC
 |zenodo|
 
 .. |Language| image:: https://img.shields.io/pypi/pyversions/yapc?color=green
-   :target: https://www.python.org  /
+   :target: https://www.python.org/
 
 .. |License| image:: https://img.shields.io/github/license/tsutterley/yapc
    :target: https://github.com/tsutterley/yapc/blob/main/LICENSE
