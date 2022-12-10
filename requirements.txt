@@ -1,5 +1,3 @@
 cython
 numpy
-h5py
-scikit-learn
 future

@@ -50,6 +50,7 @@ PROGRAM DEPENDENCIES:
     classify_photons.py: Yet Another Photon Classifier for Geolocated Photon Data
 
 UPDATE HISTORY:
+    Updated 12/2022: place some imports behind try/except statement
     Updated 06/2022: can normalize weights over entire ATL03 granule
         added option for setting the minimum KNN value
         can use a dynamic window height by setting win_h to 0
@@ -70,11 +71,21 @@ from __future__ import print_function
 
 import os
 import re
-import h5py
 import yapc
 import logging
 import argparse
+import warnings
 import numpy as np
+
+# attempt imports
+try:
+    import h5py
+except (ImportError, ModuleNotFoundError) as e:
+    warnings.filterwarnings("always")
+    warnings.warn("h5py not available")
+    warnings.warn("Some functions will throw an exception if called")
+# ignore warnings
+warnings.filterwarnings("ignore")
 
 # PURPOSE: finds the vertical extent of the photons
 def h_extent(h_ph):
@@ -136,7 +147,7 @@ def append_YAPC_ICESat2_ATL03(input_file, output='append', verbose=False,
     f_in = h5py.File(input_file, mode=clobber)
 
     # output information for file
-    logger.info('{0} -->'.format(input_file))
+    logger.info(f'{input_file} -->')
 
     # attributes for the output variables
     attrs = {}
@@ -255,7 +266,12 @@ def append_YAPC_ICESat2_ATL03(input_file, output='append', verbose=False,
             copy_ATL03_beam_group(f_in, f_out, gtx)
 
     # print output file if verbose
-    logger.info('{0} ({1})'.format(output_file, output))
+    logger.info(f'{output_file} ({output})')
+
+    # add software information
+    f_out.attrs['software_reference'] = yapc.version.project_name
+    f_out.attrs['software_version'] = yapc.version.full_version
+    f_out.attrs['software_revision'] = yapc.utilities.get_git_revision_hash()
 
     # for each input beam within the file
     for gtx in sorted(IS2_atl03_beams):
