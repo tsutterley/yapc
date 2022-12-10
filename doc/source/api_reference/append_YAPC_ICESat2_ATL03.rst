@@ -16,7 +16,7 @@ Calling Sequence
 ################
 
 .. argparse::
-    :filename: ../../scripts/append_YAPC_ICESat2_ATL03.py
+    :filename: append_YAPC_ICESat2_ATL03.py
     :func: arguments
     :prog: append_YAPC_ICESat2_ATL03.py
     :nodescription:

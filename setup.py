@@ -1,6 +1,7 @@
 import os
 import sys
 import logging
+import subprocess
 from setuptools import setup, Extension, find_packages
 
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)
@@ -25,6 +26,27 @@ with open('version.txt', mode="r", encoding="utf8") as fh:
 
 # list of all scripts to be included with package
 scripts=[os.path.join('scripts',f) for f in os.listdir('scripts') if f.endswith('.py')]
+
+
+# run cmd from the command line
+def check_output(cmd):
+    return subprocess.check_output(cmd).decode('utf')
+
+# check if HDF5 is installed
+hdf5_output = [None] * 2
+try:
+    for i, cmd in enumerate((["h5cc","-showconfig"], ["h5dump","--version"])):
+        hdf5_output[i] = check_output(cmd).strip()
+    # parse HDF5 version from h5dump
+    hdf5_version = hdf5_output[1].split().pop(2)
+except Exception as e:
+    log.warning('Failed to get HDF5 options')
+else:
+    log.info(f"HDF5 version from via h5dump: {hdf5_version}")
+# if the HDF5 version not found
+if not any(hdf5_output) and ('h5py' in install_requires):
+    hdf5_index = install_requires.index('h5py')
+    install_requires.pop(hdf5_index)
 
 # Setuptools 18.0 properly handles Cython extensions.
 setup_requires=[

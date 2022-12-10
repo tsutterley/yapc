@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 classify_photons.py
-Written by Aimee Gibbons and Tyler Sutterley (06/2022)
+Written by Aimee Gibbons and Tyler Sutterley (12/2022)
 Yet Another Photon Classifier for ATL03 Geolocated Photon Data
 
 PYTHON DEPENDENCIES:
@@ -15,6 +15,7 @@ PYTHON DEPENDENCIES:
         https://github.com/scikit-learn/scikit-learn
 
 UPDATE HISTORY:
+    Updated 12/2022: place some imports behind try/except statement
     Updated 06/2022: added option for setting the minimum KNN value
         can use a dynamic window height by setting win_h to 0
     Updated 04/2022: can weight using only height differences
@@ -27,9 +28,19 @@ UPDATE HISTORY:
     Updated 05/2021: use int64 to fix numpy deprecation warning
     Written 05/2021
 """
+import warnings
 import numpy as np
-import sklearn.neighbors
 import yapc._dist_metrics as _dist_metrics
+
+# attempt imports
+try:
+    import sklearn.neighbors
+except (ImportError, ModuleNotFoundError) as e:
+    warnings.filterwarnings("always")
+    warnings.warn("scikit-learn not available")
+    warnings.warn("Some functions will throw an exception if called")
+# ignore warnings
+warnings.filterwarnings("ignore")
 
 # PURPOSE: create distance metric for windowed classifier
 def windowed_manhattan(u, v, window=[], w=[]):

@@ -6,17 +6,14 @@ dependencies:
   - docutils<0.18
   - future
   - graphviz
-  - h5py
   - notebook
   - numpy
   - numpydoc
   - pip
   - python>=3.6
-  - scikit-learn
   - sphinx
-  - sphinx-argparse
   - sphinx_rtd_theme
-  - texlive-core
   - pip:
+    - sphinx-argparse>=0.4
     - ..
 
