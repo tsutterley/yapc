@@ -2,13 +2,13 @@
 YAPC Overview
 =============
 
-``YAPC`` is a prototype photon classifer for the NASA ICESat-2
+``pyYAPC`` is a prototype photon classifer for the NASA ICESat-2
 ATL03 Global Geolocated Photon product.
 It was developed by Jeff Lee (GSFC) with the goal of supporting and
 simplifying science applications for the NASA Ice Cloud and
 land Elevation Satellite-2 (ICESat-2).
 
-``YAPC`` is a customized inverse-distance kNN algorithm developed to
+``pyYAPC`` is a customized inverse-distance kNN algorithm developed to
 determine the significance (or weight) of individual photon events.
 The weight of each photon is indicative of localized density based
 on it surrounding K neighbors and the inverse distances.

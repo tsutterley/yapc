@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 u"""
 append_YAPC_ICESat2_ATL03.py
-Written by Aimee Gibbons and Tyler Sutterley (06/2022)
+Written by Aimee Gibbons and Tyler Sutterley (12/2022)
 Reads ICESat-2 ATL03 data files and appends photon classification flags
     from YAPC (Yet Another Photon Classifier) to granules
 
@@ -80,10 +80,9 @@ import numpy as np
 # attempt imports
 try:
     import h5py
-except (ImportError, ModuleNotFoundError) as e:
-    warnings.filterwarnings("always")
-    warnings.warn("h5py not available")
-    warnings.warn("Some functions will throw an exception if called")
+except (ImportError, ModuleNotFoundError) as exc:
+    warnings.filterwarnings("module")
+    warnings.warn("h5py not available", ImportWarning)
 # ignore warnings
 warnings.filterwarnings("ignore")
 
@@ -271,7 +270,6 @@ def append_YAPC_ICESat2_ATL03(input_file, output='append', verbose=False,
     # add software information
     f_out.attrs['software_reference'] = yapc.version.project_name
     f_out.attrs['software_version'] = yapc.version.full_version
-    f_out.attrs['software_revision'] = yapc.utilities.get_git_revision_hash()
 
     # for each input beam within the file
     for gtx in sorted(IS2_atl03_beams):
