@@ -2,7 +2,7 @@
 Contribution Guidelines
 =======================
 
-We welcome and invite contributions from anyone at any career stage and with any amount of coding experience towards the development of ``yapc``.
+We welcome and invite contributions from anyone at any career stage and with any amount of coding experience towards the development of ``pyYAPC``.
 We appreciate any and all contributions made to the project.
 You will be recognized for your work by being listed as one of the `project contributors <./Citations.html#contributors>`_.
 
@@ -20,7 +20,7 @@ Requesting a Feature
 Check the `project issues tab <https://github.com/tsutterley/yapc/issues>`_ to see if the feature has already been suggested.
 If not, please submit a new issue describing your requested feature or enhancement .
 Please give your feature request both a clear title and description.
-Let us know if this is something you would like to contribute to ``yapc`` in your description as well.
+Let us know if this is something you would like to contribute to ``pyYAPC`` in your description as well.
 
 Reporting a Bug
 ---------------

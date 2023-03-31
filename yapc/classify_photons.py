@@ -35,7 +35,7 @@ import yapc._dist_metrics as _dist_metrics
 # attempt imports
 try:
     import sklearn.neighbors
-except (ImportError, ModuleNotFoundError) as e:
+except (ImportError, ModuleNotFoundError) as exc:
     warnings.filterwarnings("always")
     warnings.warn("scikit-learn not available")
     warnings.warn("Some functions will throw an exception if called")

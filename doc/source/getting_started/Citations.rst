@@ -5,9 +5,15 @@ Citation Information
 References
 ##########
 
-``YAPC`` is developed with the goal of supporting and simplifying science
+``pyYAPC`` is developed with the goal of supporting and simplifying science
 applications for the NASA ICESat-2 mission. This work is developed in
 conjunction with other ICESat-2 projects.
+
+If you have used ``pyYAPC`` in your work, please consider citing our library:
+
+    T. C. Sutterley and A. Gibbons, "pyYAPC: Python interpretation of the NASA Goddard
+    Space Flight Center YAPC ("Yet Another Photon Classifier") algorithm", (2021).
+    `doi: 10.5281/zenodo.6717591 <https://doi.org/10.5281/zenodo.6717591>`_
 
 Contributors
 ############
@@ -42,7 +48,7 @@ This software is also dependent on other commonly used Python packages:
 Credits
 #######
 
-``YAPC`` was devised and is being developed by `Jeff Lee <https://science.gsfc.nasa.gov/sed/bio/jeffrey.e.lee>`_,
+``pyYAPC`` was devised and is being developed by `Jeff Lee <https://science.gsfc.nasa.gov/sed/bio/jeffrey.e.lee>`_,
 Software Development Lead in the Cryospheric Sciences Laboratory at NASA Goddard Space Flight Center.
 
 Disclaimer
