@@ -48,7 +48,7 @@ This software is also dependent on other commonly used Python packages:
 Credits
 #######
 
-``pyYAPC`` was devised and is being developed by `Jeff Lee <https://science.gsfc.nasa.gov/sed/bio/jeffrey.e.lee>`_,
+``YAPC`` was devised and is being developed by `Jeff Lee <https://science.gsfc.nasa.gov/sed/bio/jeffrey.e.lee>`_,
 Software Development Lead in the Cryospheric Sciences Laboratory at NASA Goddard Space Flight Center.
 
 Disclaimer
