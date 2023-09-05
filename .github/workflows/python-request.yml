@@ -37,6 +37,7 @@ jobs:
           flake8
           pytest
           pytest-cov
+          pytest-runner
           cython
     - name: Lint with flake8
       run: |
